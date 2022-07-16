@@ -1,4 +1,4 @@
-use crate::ledmodule::Ledmodule;
+use crate::ledmodule::LedModule;
 
 use std::error::Error;
 
@@ -22,11 +22,12 @@ pub struct Controller{
     ble_manager: Manager,
     ble_adapter: Adapter,
 
-    ledmodules: Vec<Ledmodule>,
+    ledmodules: Vec<LedModule>,
 }
 
 impl Controller {
-    pub async fn new(prefix: &str) -> Result<Controller, Box<dyn Error>> {
+    // Constructor //
+    pub async fn new(prefix: &str) -> Result<Self, Box<dyn Error>> {
         let ble_manager = Manager::new().await?;
         
         let ble_adapter = ble_manager.adapters().await?;
@@ -35,7 +36,7 @@ impl Controller {
             .nth(0) // take first
             .expect("Unable to find a working adapter"); // replace with safe implementation
         Ok (
-            Controller{
+            Self{
                 prefix: prefix.to_string(),
                 ble_manager,
                 ble_adapter: client,
@@ -43,12 +44,12 @@ impl Controller {
             }
         )
     }
-    pub async fn discover(&self) -> Result<Vec<Ledmodule>, Box<dyn Error>> {
+    async fn discovery(&self) -> Result<Vec<LedModule>, Box<dyn Error>> {
         println!("Starting scanning...");
         self.ble_adapter.start_scan(ScanFilter::default()).await;
         time::sleep(Duration::from_secs(2)).await;
 
-        let mut ledstrips = Vec::new();
+        let mut ledmodules = Vec::new();
 
         for p in self.ble_adapter.peripherals().await.unwrap() {
             if p.properties()
@@ -59,28 +60,39 @@ impl Controller {
                 .iter()
                 .any(|name| name.contains(&self.prefix))
                 {
-                    ledstrips.push(Ledmodule {
-                        peripheral: p,
-                        write_char: None,
-                        read_char: None,
-                    })
+                    ledmodules.push(LedModule::new("Alias", p, None, None));
                 }
         }
         println!("Scan Terminated.");
-        Ok(ledstrips)
+        Ok(ledmodules)
     }
-    pub async fn connect(&self, ledmodules: Vec<Ledmodule>) {
+    pub async fn connect(&mut self) {
+        let ledmodules = self.discovery().await.expect("Error during Discovery");
+        self.ledmodules = ledmodules;
         println!("Connecting...");
-        for led in ledmodules {
-            led.peripheral.connect().await;
-            println!("\n\nConnected to {:?}...", led.peripheral);
+        for ledmodule in self.ledmodules.iter_mut() {
+            ledmodule.peripheral().connect().await;
+            println!("\n\nConnected to {:?}...", ledmodule.peripheral());
 
-            led.peripheral.discover_services().await;
-            let chars = led.peripheral.characteristics();
+            ledmodule.peripheral().discover_services().await;
+            let chars = ledmodule.peripheral().characteristics();
             let cmd_char = chars
-                .iter()
+                .into_iter()
                 .find(|c| c.uuid == DEFAULT_WRITE_CHARACTERISTIC_UUID)
                 .expect("Unable to find characterics");
+            ledmodule.add_write_characteristic(cmd_char);
+
+            for _ in 0..20 {
+                println!("Light off");
+                let color_cmd = vec![0xcc, 0x24, 0x33];
+                ledmodule.peripheral().write(ledmodule.write_char().unwrap(), &color_cmd, WriteType::WithoutResponse).await;
+                time::sleep(Duration::from_millis(200)).await;
+                println!("Light on");
+                let color_cmd = vec![0xcc, 0x23, 0x33];
+                ledmodule.peripheral().write(ledmodule.write_char().unwrap(), &color_cmd, WriteType::WithoutResponse).await;
+                time::sleep(Duration::from_millis(200)).await;
+            }
         }
+
     }
 }
