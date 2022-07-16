@@ -9,6 +9,9 @@ use btleplug::api::{
 use btleplug::platform::{Adapter, Manager, Peripheral};
 use uuid::Uuid;
 
+use std::time::Duration;
+use tokio::time;
+
 
 pub const DEFAULT_WRITE_CHARACTERISTIC_UUID: Uuid = uuid_from_u16(0xFFD9); 
 pub const DEFAULT_WRITE_SERVICE_UUID: Uuid = uuid_from_u16(0xFFD5);
@@ -39,5 +42,31 @@ impl Controller {
                 ledmodules: Vec::new()
             }
         )
+    }
+    pub async fn discover(&self) -> Result<Vec<Ledmodule>, Box<dyn Error>> {
+        println!("Starting scanning...");
+        self.ble_adapter.start_scan(ScanFilter::default()).await;
+        time::sleep(Duration::from_secs(2)).await;
+
+        let mut ledstrips = Vec::new();
+
+        for p in self.ble_adapter.peripherals().await.unwrap() {
+            if p.properties()
+                .await
+                .unwrap()
+                .unwrap()
+                .local_name
+                .iter()
+                .any(|name| name.contains(&self.prefix))
+                {
+                    ledstrips.push(Ledmodule {
+                        peripheral: p,
+                        write_char: None,
+                        read_char: None,
+                    })
+                }
+        }
+        println!("Scan Terminated.");
+        Ok(ledstrips)
     }
 }
