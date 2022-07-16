@@ -69,4 +69,18 @@ impl Controller {
         println!("Scan Terminated.");
         Ok(ledstrips)
     }
+    pub async fn connect(&self, ledmodules: Vec<Ledmodule>) {
+        println!("Connecting...");
+        for led in ledmodules {
+            led.peripheral.connect().await;
+            println!("\n\nConnected to {:?}...", led.peripheral);
+
+            led.peripheral.discover_services().await;
+            let chars = led.peripheral.characteristics();
+            let cmd_char = chars
+                .iter()
+                .find(|c| c.uuid == DEFAULT_WRITE_CHARACTERISTIC_UUID)
+                .expect("Unable to find characterics");
+        }
+    }
 }
