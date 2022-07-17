@@ -1,4 +1,5 @@
-use crate::ledmodule::LedModule;
+use crate::device::led_device::LedDevice;
+use crate::device::traits::{Light, Device};
 
 use std::error::Error;
 
@@ -16,16 +17,19 @@ use tokio::time;
 pub const DEFAULT_WRITE_CHARACTERISTIC_UUID: Uuid = uuid_from_u16(0xFFD9); 
 pub const DEFAULT_WRITE_SERVICE_UUID: Uuid = uuid_from_u16(0xFFD5);
 
-pub struct Controller{
+pub struct Controller<T: Light>{
     prefix: String,
 
     ble_manager: Manager,
     ble_adapter: Adapter,
 
-    ledmodules: Vec<LedModule>,
+    led_devices: Vec<T>,
 }
 
-impl Controller {
+impl<T> Controller<T>
+where 
+    T: Light + Device,
+{
     // Constructor //
     pub async fn new(prefix: &str) -> Result<Self, Box<dyn Error>> {
         let ble_manager = Manager::new().await?;
@@ -40,17 +44,21 @@ impl Controller {
                 prefix: prefix.to_string(),
                 ble_manager,
                 ble_adapter: client,
-                ledmodules: Vec::new()
+                led_devices: Vec::<T>::new()
             }
         )
     }
-    async fn discovery(&self) -> Result<Vec<LedModule>, Box<dyn Error>> {
+
+    //----------//
+    // Discover //
+    //----------//
+    pub async fn discovery(&self) -> Result<Vec<T>, Box<dyn Error>> {
         println!("Starting scanning...");
         self.ble_adapter.start_scan(ScanFilter::default()).await;
         time::sleep(Duration::from_secs(2)).await;
-
-        let mut ledmodules = Vec::new();
-
+    
+        let mut led_devices: Vec<T> = Vec::new();
+    
         for p in self.ble_adapter.peripherals().await.unwrap() {
             if p.properties()
                 .await
@@ -60,39 +68,36 @@ impl Controller {
                 .iter()
                 .any(|name| name.contains(&self.prefix))
                 {
-                    ledmodules.push(LedModule::new("Alias", p, None, None));
+                    println!("d{:?}", &p);
+                    led_devices.push(T::new("Alias", p, None, None));
                 }
         }
         println!("Scan Terminated.");
-        Ok(ledmodules)
+        Ok(led_devices)
     }
-    pub async fn connect(&mut self) {
-        let ledmodules = self.discovery().await.expect("Error during Discovery");
-        self.ledmodules = ledmodules;
-        println!("Connecting...");
-        for ledmodule in self.ledmodules.iter_mut() {
-            ledmodule.peripheral().connect().await;
-            println!("\n\nConnected to {:?}...", ledmodule.peripheral());
 
-            ledmodule.peripheral().discover_services().await;
-            let chars = ledmodule.peripheral().characteristics();
+
+
+    //---------//
+    // Connect //
+    //---------//
+    pub async fn connect(&mut self) {
+        let led_devices = self.discovery().await.expect("Error during Discovery");
+        self.led_devices = led_devices;
+        println!("Connecting...");
+        for ledmodule in self.led_devices.iter_mut() {
+            ledmodule.peripheral().as_ref().unwrap().connect().await;
+            println!("\n\nConnected to {:?}...", ledmodule.peripheral());
+           
+            ledmodule.peripheral().as_ref().unwrap().discover_services().await;
+            let chars = ledmodule.peripheral().as_ref().unwrap().characteristics();
             let cmd_char = chars
                 .into_iter()
                 .find(|c| c.uuid == DEFAULT_WRITE_CHARACTERISTIC_UUID)
                 .expect("Unable to find characterics");
             ledmodule.add_write_characteristic(cmd_char);
-
-            for _ in 0..20 {
-                println!("Light off");
-                let color_cmd = vec![0xcc, 0x24, 0x33];
-                ledmodule.peripheral().write(ledmodule.write_char().unwrap(), &color_cmd, WriteType::WithoutResponse).await;
-                time::sleep(Duration::from_millis(200)).await;
-                println!("Light on");
-                let color_cmd = vec![0xcc, 0x23, 0x33];
-                ledmodule.peripheral().write(ledmodule.write_char().unwrap(), &color_cmd, WriteType::WithoutResponse).await;
-                time::sleep(Duration::from_millis(200)).await;
-            }
+    
         }
-
+    
     }
 }
