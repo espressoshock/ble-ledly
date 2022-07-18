@@ -1,42 +1,48 @@
 use crate::communication_protocol::generic_rgb_light::GenericRGBLight;
 use crate::communication_protocol::traits::Encode;
-use crate::device::traits::{Light, RGB, Device};
+use crate::device::traits::{Device, Light, RGB};
+use crate::errors::LightControlError;
 
 use std::error::Error;
 
+use btleplug::api::bleuuid::uuid_from_u16;
 use btleplug::api::Characteristic;
-use btleplug::api::{
-   Peripheral as _, WriteType,
-};
-use btleplug::platform::{Peripheral};
-
+use btleplug::api::{Peripheral as _, WriteType};
+use btleplug::platform::Peripheral;
 
 use async_trait::async_trait;
+use uuid::Uuid;
 
-#[derive(Debug)]
-pub struct LedDevice{
+pub const DEFAULT_WRITE_CHARACTERISTIC_UUID: Uuid = uuid_from_u16(0xFFD9);
+pub const DEFAULT_WRITE_SERVICE_UUID: Uuid = uuid_from_u16(0xFFD5);
+
+pub struct LedDevice {
     alias: String,
     peripheral: Option<Peripheral>,
+
+    last_cmd: Vec<u8>,
 
     // .0: Characteristics
     // .1: Default Characteristic
     write_chars: (Vec<Characteristic>, usize),
     read_chars: (Vec<Characteristic>, usize),
 }
-impl LedDevice {
-    async fn write_r(&self, raw_bytes: &Vec<u8>) {
-        self.peripheral.as_ref().expect("Error unpacking peripheral").write(self.write_char(None).as_ref().unwrap(), raw_bytes, WriteType::WithoutResponse).await;
-    }
-}
+
 #[async_trait]
 impl Device for LedDevice {
     // Constructor //
-    fn new (alias: &str, peripheral: Peripheral, write_chars: Option<Vec<Characteristic>>, read_chars: Option<Vec<Characteristic>>) -> Self {
+    fn new(
+        alias: &str,
+        peripheral: Peripheral,
+        write_chars: Option<Vec<Characteristic>>,
+        read_chars: Option<Vec<Characteristic>>,
+    ) -> Self {
         Self {
             alias: alias.to_owned(),
             peripheral: Some(peripheral),
             write_chars: (write_chars.unwrap_or(Vec::new()), 0usize),
             read_chars: (read_chars.unwrap_or(Vec::new()), 0usize),
+            last_cmd: Vec::new(),
         }
     }
     //--------//
@@ -51,15 +57,30 @@ impl Device for LedDevice {
     fn write_char(&self, nth: Option<usize>) -> Option<&Characteristic> {
         (&self).write_chars.0.get(nth.unwrap_or(self.write_chars.1))
     }
+    fn default_write_characteristic_uuid(&self) -> &'static Uuid {
+        &DEFAULT_WRITE_CHARACTERISTIC_UUID
+    }
 
     //-----------------//
     // Write Raw Bytes //
     //-----------------//
     async fn write_raw(&self, raw_bytes: &Vec<u8>) {
-        println!("Writing...");
-        self.peripheral.as_ref().unwrap().write(self.write_char(None).as_ref().unwrap(), &raw_bytes, WriteType::WithoutResponse).await;
+        // TODO: implement error handling
+        let write = self
+            .peripheral
+            .as_ref()
+            .unwrap()
+            .write(
+                self.write_char(None).as_ref().unwrap(),
+                &raw_bytes,
+                WriteType::WithoutResponse,
+            )
+            .await;
+        match write {
+            Ok(_) => println!("Raw write successfull"),
+            Err(_) => println!("Error during raw write"),
+        }
     }
-
 
     //--------//
     // Setter //
@@ -75,7 +96,6 @@ impl Device for LedDevice {
     }
 }
 
-
 //------------------------//
 // Communication Protocol //
 //------------------------//
@@ -89,16 +109,23 @@ impl Light for LedDevice {
     async fn turn_on(&self) {
         self.write_raw(&GenericRGBLight::turn_on(self)).await;
     }
-    async fn turn_off(&self){
+    async fn turn_off(&self) {
         self.write_raw(&GenericRGBLight::turn_off(self)).await;
     }
-    async fn set_brightness(&self, value: u8) -> Result<(), Box<dyn Error>>{todo!();}
+    async fn set_brightness(&self, value: f32) -> Result<(), LightControlError> {
+        if value < 0f32 && value > 1f32 {
+            return Err(LightControlError::InvalidRange(String::from("0.0-1.0")));
+        }
+        todo!();
+    }
 }
-
 
 //-----//
 // RGB //
 //-----//
+#[async_trait]
 impl RGB for LedDevice {
-    fn set_color(&self, red: u8, green: u8, blue: u8) -> Result<(), Box<dyn Error>>{todo!();}
+    async fn set_color(&self, red: u8, green: u8, blue: u8) {
+        self.write_raw(&GenericRGBLight::encode_color(self, red, green, blue)).await;
+    }
 }
