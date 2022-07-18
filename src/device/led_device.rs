@@ -1,13 +1,13 @@
-use std::fmt::Result;
-
 use crate::communication_protocol::generic_rgb_light::GenericRGBLight;
 use crate::device::traits::{Device, Light, RGB};
-use crate::errors::{BluetoothError, LightControlError};
+use crate::errors::BluetoothError;
 
 use btleplug::api::bleuuid::uuid_from_u16;
 use btleplug::api::Characteristic;
 use btleplug::api::{Peripheral as _, WriteType};
 use btleplug::platform::Peripheral;
+
+use std::error::Error;
 
 use async_trait::async_trait;
 use uuid::Uuid;
@@ -81,22 +81,20 @@ impl Device for LedDevice {
     //-----------------//
     // Write Raw Bytes //
     //-----------------//
-    async fn write_raw(&self, raw_bytes: &Vec<u8>) {
-        // TODO: implement error handling
-        let write = self
-            .peripheral
+    async fn write_raw(&mut self, raw_bytes: &Vec<u8>) -> Result<(), BluetoothError> {
+        self.peripheral
             .as_ref()
-            .unwrap()
+            .ok_or(BluetoothError::InvalidPeripheralReference)?
             .write(
-                self.write_char(None).as_ref().unwrap(),
+                self.write_char(None)
+                    .as_ref()
+                    .ok_or(BluetoothError::InvalidCharacteristic)?,
                 &raw_bytes,
                 WriteType::WithoutResponse,
             )
-            .await;
-        match write {
-            Ok(_) => println!("Raw write successfull"),
-            Err(_) => println!("Error during raw write"),
-        }
+            .await?;
+
+        Ok(())
     }
 
     //--------//
@@ -123,13 +121,13 @@ impl GenericRGBLight for LedDevice {}
 //-------//
 #[async_trait]
 impl Light for LedDevice {
-    async fn turn_on(&self) {
+    async fn turn_on(&mut self) {
         self.write_raw(&GenericRGBLight::turn_on(self)).await;
     }
-    async fn turn_off(&self) {
+    async fn turn_off(&mut self) {
         self.write_raw(&GenericRGBLight::turn_off(self)).await;
     }
-    async fn set_brightness(&self, red: u8, green: u8, blue: u8, value: f32) {
+    async fn set_brightness(&mut self, red: u8, green: u8, blue: u8, value: f32) {
         // TODO: update with proper implementation
         self.write_raw(&GenericRGBLight::encode_color(
             self,
@@ -150,7 +148,7 @@ impl Light for LedDevice {
 //-----//
 #[async_trait]
 impl RGB for LedDevice {
-    async fn set_color(&self, red: u8, green: u8, blue: u8) {
+    async fn set_color(&mut self, red: u8, green: u8, blue: u8) {
         self.write_raw(&GenericRGBLight::encode_color(self, red, green, blue))
             .await;
     }
