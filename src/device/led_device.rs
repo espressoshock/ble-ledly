@@ -16,23 +16,20 @@ pub const DEFAULT_WRITE_CHARACTERISTIC_UUID: Uuid = uuid_from_u16(0xFFD9);
 pub const DEFAULT_WRITE_SERVICE_UUID: Uuid = uuid_from_u16(0xFFD5);
 
 #[derive(Debug)]
-enum CommandKind {
+pub enum CommandKind {
     HWSpecific,
     Transferrable,
 }
 
 #[derive(Debug)]
-struct Command {
+pub struct Command {
     pub kind: Option<CommandKind>,
     pub value: Option<Vec<u8>>,
 }
 
 impl Command {
-    pub fn new() -> Self {
-        Self {
-            kind: None,
-            value: None,
-        }
+    pub fn new(value: Option<Vec<u8>>, kind: Option<CommandKind>) -> Self {
+        Self { kind, value }
     }
 }
 #[derive(Debug)]
@@ -40,7 +37,7 @@ pub struct LedDevice {
     alias: String,
     peripheral: Option<Peripheral>,
 
-    last_cmd: Command,
+    _last_cmd: Command,
 
     // .0: Characteristics
     // .1: Default Characteristic
@@ -62,7 +59,7 @@ impl Device for LedDevice {
             peripheral: Some(peripheral),
             write_chars: (write_chars.unwrap_or(Vec::new()), 0usize),
             read_chars: (read_chars.unwrap_or(Vec::new()), 0usize),
-            last_cmd: Command::new(),
+            _last_cmd: Command::new(None, None),
         }
     }
     //--------//
@@ -132,12 +129,19 @@ impl Light for LedDevice {
     async fn turn_off(&self) {
         self.write_raw(&GenericRGBLight::turn_off(self)).await;
     }
-    async fn set_brightness(&self, value: f32) {
+    async fn set_brightness(&self, red: u8, green: u8, blue: u8, value: f32) {
+        // TODO: update with proper implementation
+        self.write_raw(&GenericRGBLight::encode_color(
+            self,
+            (red as f32 * value) as u8,
+            (green as f32 * value) as u8,
+            (blue as f32 * value) as u8,
+        ))
+        .await;
         // -> Result<(), LightControlError> {
         // if value < 0f32 && value > 1f32 {
         //     return Err(LightControlError::InvalidRange(String::from("0.0-1.0")));
         // }
-        todo!();
     }
 }
 
