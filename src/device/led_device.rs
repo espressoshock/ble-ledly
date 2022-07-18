@@ -7,8 +7,6 @@ use btleplug::api::Characteristic;
 use btleplug::api::{Peripheral as _, WriteType};
 use btleplug::platform::Peripheral;
 
-use std::error::Error;
-
 use async_trait::async_trait;
 use uuid::Uuid;
 
@@ -82,6 +80,7 @@ impl Device for LedDevice {
     // Write Raw Bytes //
     //-----------------//
     async fn write_raw(&mut self, raw_bytes: &Vec<u8>) -> Result<(), BluetoothError> {
+        // TODO: implement error handling
         self.peripheral
             .as_ref()
             .ok_or(BluetoothError::InvalidPeripheralReference)?
@@ -121,11 +120,16 @@ impl GenericRGBLight for LedDevice {}
 //-------//
 #[async_trait]
 impl Light for LedDevice {
+    // TODO: Implement better error handling
     async fn turn_on(&mut self) {
-        self.write_raw(&GenericRGBLight::turn_on(self)).await;
+        self.write_raw(&GenericRGBLight::turn_on(self))
+            .await
+            .unwrap_or_else(|err| println!("Error turning light on: {:?}", err));
     }
     async fn turn_off(&mut self) {
-        self.write_raw(&GenericRGBLight::turn_off(self)).await;
+        self.write_raw(&GenericRGBLight::turn_off(self))
+            .await
+            .unwrap_or_else(|err| println!("Error turning light off: {:?}", err));
     }
     async fn set_brightness(&mut self, red: u8, green: u8, blue: u8, value: f32) {
         // TODO: update with proper implementation
@@ -135,11 +139,8 @@ impl Light for LedDevice {
             (green as f32 * value) as u8,
             (blue as f32 * value) as u8,
         ))
-        .await;
-        // -> Result<(), LightControlError> {
-        // if value < 0f32 && value > 1f32 {
-        //     return Err(LightControlError::InvalidRange(String::from("0.0-1.0")));
-        // }
+        .await
+        .unwrap_or_else(|err| println!("Error setting light brightness: {:?}", err));
     }
 }
 
@@ -150,6 +151,7 @@ impl Light for LedDevice {
 impl RGB for LedDevice {
     async fn set_color(&mut self, red: u8, green: u8, blue: u8) {
         self.write_raw(&GenericRGBLight::encode_color(self, red, green, blue))
-            .await;
+            .await
+            .unwrap_or_else(|err| println!("Error setting light brightness: {:?}", err));
     }
 }

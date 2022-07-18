@@ -30,7 +30,8 @@ fn animation_speed(speed: &AnimationSpeed) -> u64 {
     }
 }
 // TODO: Implement exponential fading
-async fn _breathing<T: Light + RGB>(led_device: &T, red: u8, green: u8, blue: u8, interval: u64) {
+async fn _breathing<T: Light + RGB>(led_device: &mut T, red: u8, green: u8, blue: u8, interval: u64) {
+    // TODO: replace loops with sine impl.
     for i in 0..=100 {
         led_device
             .set_brightness(red, green, blue, i as f32 / 100 as f32)
@@ -46,7 +47,7 @@ async fn _breathing<T: Light + RGB>(led_device: &T, red: u8, green: u8, blue: u8
 }
 
 pub async fn breathing<T: Light + RGB>(
-    led_device: &T,
+    led_device: &mut T,
     red: u8,
     green: u8,
     blue: u8,
@@ -56,7 +57,7 @@ pub async fn breathing<T: Light + RGB>(
     match repeat {
         AnimationRepeat::FiniteCount(count) => {
             let mut i = 0;
-            while i <= *count {
+            while i < *count {
                 _breathing(led_device, red, green, blue, animation_speed(speed)).await;
                 i += 1;
             }

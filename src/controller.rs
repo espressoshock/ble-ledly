@@ -47,8 +47,8 @@ where
     pub fn ble_manager(&self) -> &Manager {
         &self.ble_manager
     }
-    pub fn list(&self) -> &Vec<T> {
-        &self.led_devices
+    pub fn list(&mut self) -> &mut Vec<T> {
+        &mut self.led_devices
     }
 
     //------------------//
