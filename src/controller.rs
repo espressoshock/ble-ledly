@@ -16,6 +16,7 @@ pub struct Controller<T: Light> {
     ble_manager: Manager,
     ble_adapter: Adapter,
 
+    //TODO: provide key-like access - hashmap
     led_devices: Vec<T>,
 }
 
@@ -46,6 +47,9 @@ where
     pub fn ble_manager(&self) -> &Manager {
         &self.ble_manager
     }
+    pub fn list(&self) -> &Vec<T> {
+        &self.led_devices
+    }
 
     //------------------//
     // Device Discovery //
@@ -57,15 +61,15 @@ where
         let mut led_devices: Vec<T> = Vec::new();
 
         for p in self.ble_adapter.peripherals().await? {
-            if p.properties()
+            let alias = &p
+                .properties()
                 .await?
                 .ok_or(BluetoothError::InvalidPeriperipheralProperty)?
                 .local_name
-                .iter()
-                .any(|name| name.contains(&self.prefix))
-            {
-                println!("d{:?}", &p);
-                led_devices.push(T::new("Alias", p, None, None));
+                .unwrap_or(String::from("Unknown"));
+
+            if alias.contains(&self.prefix) {
+                led_devices.push(T::new(&alias, p, None, None));
             }
         }
         println!("Scan Terminated.");
