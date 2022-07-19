@@ -1,7 +1,7 @@
 # ble-ledly
 > _Customizable_ and _extensible_ cross-platform high-level __BLE__ light controller
 
-_ble-ledly_ is a _Customizable_ and _extensible_ cross-platform high-level _Bluetooth Low Energy_ light controller. Built on top of btleplug, it is the designed to control _ble led lights and _led strips_. Provides out-of-the-box _hardware-specific_ controls and animation as well as non-transferable (requires continuous client connection).
+_ble-ledly_ is a _Customizable_ and _extensible_ cross-platform high-level _Bluetooth Low Energy_ light controller. Built on top of btleplug, it is the designed to control _ble led lights and _RGB_ _led strips_. Provides out-of-the-box _hardware-specific_ controls and animation as well as non-transferable (requires continuous client connection).
 
 ## Usage
 
@@ -75,6 +75,9 @@ _ble-ledly_ is a _Customizable_ and _extensible_ cross-platform high-level _Blue
 
            // turn-off
            light.turn_off().await;
+
+          // Disconnect
+          light.disconnect().await.unwrap();
        }
    }
  ```
