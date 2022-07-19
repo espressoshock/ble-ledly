@@ -19,6 +19,9 @@ pub enum BluetoothError {
 
     #[error("no write characteristic found that satisfy target value")]
     NotFoundTargetCharacteristic,
+
+    #[error("Invalid characteristic")]
+    InvalidCharacteristic,
 }
 
 #[derive(Error, Debug)]

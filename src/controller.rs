@@ -72,7 +72,6 @@ where
                 led_devices.push(T::new(&alias, p, None, None));
             }
         }
-        println!("Scan Terminated.");
         Ok(led_devices)
     }
 
@@ -85,7 +84,6 @@ where
     ) -> Result<(), Box<dyn Error>> {
         // Discover devices //
         self.led_devices = self.device_discovery().await?;
-        println!("Connecting...");
 
         // Connect devices //
         for led_device in self.led_devices.iter_mut() {
@@ -96,8 +94,6 @@ where
                 .ok_or(BluetoothError::InvalidPeripheralReference)?
                 .connect()
                 .await?;
-
-            println!("\n\nConnected to {:?}...", led_device.peripheral());
 
             // Service discovery //
             led_device

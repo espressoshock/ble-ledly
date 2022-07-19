@@ -1,4 +1,4 @@
-use crate::communication_protocol::generic_rgb_light::GenericRGBLight;
+use crate::communication_protocol::generic_rgb_light::{AnimationSpeedSetting, GenericRGBLight, PulsatingColor};
 use crate::device::traits::{Device, Light, RGB};
 use crate::errors::BluetoothError;
 
@@ -141,6 +141,11 @@ impl Light for LedDevice {
         ))
         .await
         .unwrap_or_else(|err| println!("Error setting light brightness: {:?}", err));
+    }
+    async fn pulsating(&mut self, color: &PulsatingColor, speed_setting: &AnimationSpeedSetting) {
+        self.write_raw(&GenericRGBLight::pulsating(self, color, speed_setting))
+            .await
+            .unwrap_or_else(|err| println!("Error setting light brightness: {:?}", err));
     }
 }
 

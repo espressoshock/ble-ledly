@@ -30,7 +30,13 @@ fn animation_speed(speed: &AnimationSpeed) -> u64 {
     }
 }
 // TODO: Implement exponential fading
-async fn _breathing<T: Light + RGB>(led_device: &mut T, red: u8, green: u8, blue: u8, interval: u64) {
+async fn _breathing<T: Light + RGB>(
+    led_device: &mut T,
+    red: u8,
+    green: u8,
+    blue: u8,
+    interval: u64,
+) {
     // TODO: replace loops with sine impl.
     for i in 0..=100 {
         led_device
