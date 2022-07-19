@@ -1,9 +1,25 @@
 [package]
 name = "ble-ledly"
-version = "0.1.0"
+version = "0.1.0-alpha.0"
 edition = "2021"
+authors = ["Vincenzo Buono"]
+license = "MIT"
+repository = "https://github.com/espressoshock/ble-ledly"
+homepage = "https://github.com/espressoshock/ble-ledly"
+description = """
+A customizable and extensible cross-platform high-level Bluetooth Low Energy
+light controller.
+"""
+readme = "README.md"
+keywords = ["ledstrip", "ledlight", "ble", "led", "rgb"]
+categories = ["harware-support"]
+
+[lib]
+path = "src/lib.rs"
 
 [dependencies]
 btleplug = "0.9"
 tokio = { version = "1", features = ["full"] }
 uuid = "0.8.2"
+async-trait = "0.1"
+thiserror = "1"
