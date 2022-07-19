@@ -1,4 +1,6 @@
-use crate::communication_protocol::generic_rgb_light::{AnimationSpeedSetting, GenericRGBLight, PulsatingColor};
+use crate::communication_protocol::generic_rgb_light::{
+    AnimationSpeedSetting, GenericRGBLight, PulsatingColor,
+};
 use crate::device::traits::{Device, Light, RGB};
 use crate::errors::BluetoothError;
 
@@ -32,6 +34,7 @@ impl Command {
 }
 #[derive(Debug)]
 pub struct LedDevice {
+    name: String,
     alias: String,
     peripheral: Option<Peripheral>,
 
@@ -47,12 +50,14 @@ pub struct LedDevice {
 impl Device for LedDevice {
     // Constructor //
     fn new(
+        name: &str,
         alias: &str,
         peripheral: Peripheral,
         write_chars: Option<Vec<Characteristic>>,
         read_chars: Option<Vec<Characteristic>>,
     ) -> Self {
         Self {
+            name: name.to_owned(),
             alias: alias.to_owned(),
             peripheral: Some(peripheral),
             write_chars: (write_chars.unwrap_or(Vec::new()), 0usize),
@@ -65,6 +70,9 @@ impl Device for LedDevice {
     //--------//
     fn alias(&self) -> &str {
         &self.alias
+    }
+    fn name(&self) -> &str {
+        &self.name
     }
     fn peripheral(&self) -> &Option<Peripheral> {
         &self.peripheral
@@ -101,6 +109,9 @@ impl Device for LedDevice {
     //--------//
     fn set_peripheral(&mut self, peripheral: Peripheral) {
         self.peripheral = Some(peripheral);
+    }
+    fn set_alias(&mut self, alias: &str) {
+        self.alias = alias.to_owned();
     }
     fn add_write_characteristic(&mut self, characteristic: Characteristic) {
         self.write_chars.0.push(characteristic);

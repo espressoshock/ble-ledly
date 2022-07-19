@@ -10,12 +10,14 @@ use crate::errors::BluetoothError;
 #[async_trait]
 pub trait Device {
     fn new(
+        name: &str,
         alias: &str,
         peripheral: Peripheral,
         write_chars: Option<Vec<Characteristic>>,
         read_chars: Option<Vec<Characteristic>>,
     ) -> Self;
     fn alias(&self) -> &str;
+    fn name(&self) -> &str;
     fn peripheral(&self) -> &Option<Peripheral>;
     fn write_char(&self, nth: Option<usize>) -> Option<&Characteristic>;
     fn default_write_characteristic_uuid(&self) -> &'static Uuid;
@@ -23,6 +25,7 @@ pub trait Device {
     async fn write_raw(&mut self, raw_bytes: &Vec<u8>) -> Result<(), BluetoothError>;
 
     fn set_peripheral(&mut self, peripheral: Peripheral);
+    fn set_alias(&mut self, alias: &str);
     fn add_write_characteristic(&mut self, characteristic: Characteristic);
     fn add_read_characteristic(&mut self, characteristic: Characteristic);
 }
