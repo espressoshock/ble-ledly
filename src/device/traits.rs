@@ -21,8 +21,8 @@ pub trait Device {
     fn peripheral(&self) -> &Option<Peripheral>;
     fn write_char(&self, nth: Option<usize>) -> Option<&Characteristic>;
     fn default_write_characteristic_uuid(&self) -> &'static Uuid;
-    // async fn write_raw(&self, raw_bytes: &Vec<u8>);
     async fn write_raw(&mut self, raw_bytes: &Vec<u8>) -> Result<(), BluetoothError>;
+    async fn disconnect(&self) -> Result<(), BluetoothError>;
 
     fn set_peripheral(&mut self, peripheral: Peripheral);
     fn set_alias(&mut self, alias: &str);

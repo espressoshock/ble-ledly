@@ -104,6 +104,18 @@ impl Device for LedDevice {
         Ok(())
     }
 
+    //------------//
+    // Disconnect //
+    //------------//
+    async fn disconnect(&self) -> Result<(), BluetoothError>{
+        self.peripheral
+            .as_ref()
+            .ok_or(BluetoothError::InvalidPeripheralReference)?
+            .disconnect()
+            .await?;
+        Ok(())
+    }
+
     //--------//
     // Setter //
     //--------//

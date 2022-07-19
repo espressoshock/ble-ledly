@@ -128,4 +128,19 @@ where
         }
         Ok(())
     }
+
+    //------------//
+    // Disconnect //
+    //------------//
+    pub async fn disconnect(&self, led_devices: &Vec<T>) -> Result<(), BluetoothError> {
+        for led_device in led_devices.iter() {
+            led_device
+                .peripheral()
+                .as_ref()
+                .ok_or(BluetoothError::InvalidPeripheralReference)?
+                .disconnect()
+                .await?;
+        }
+        Ok(())
+    }
 }

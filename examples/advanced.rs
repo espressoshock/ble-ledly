@@ -65,5 +65,8 @@ async fn main() {
 
         // turn-off
         light.turn_off().await;
+
+        // Disconnect
+        light.disconnect().await.unwrap();
     }
 }
