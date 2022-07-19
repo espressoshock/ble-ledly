@@ -61,15 +61,15 @@ where
         let mut led_devices: Vec<T> = Vec::new();
 
         for p in self.ble_adapter.peripherals().await? {
-            let alias = &p
+            let name = &p
                 .properties()
                 .await?
                 .ok_or(BluetoothError::InvalidPeriperipheralProperty)?
                 .local_name
                 .unwrap_or(String::from("Unknown"));
 
-            if alias.contains(&self.prefix) {
-                led_devices.push(T::new(&alias, p, None, None));
+            if name.contains(&self.prefix) {
+                led_devices.push(T::new(&name, &name, p, None, None));
             }
         }
         Ok(led_devices)
@@ -80,10 +80,15 @@ where
     //---------//j
     pub async fn connect(
         &mut self,
+        led_devices: Option<Vec<T>>,
         characteristics_uuid: Option<Uuid>,
     ) -> Result<(), Box<dyn Error>> {
         // Discover devices //
-        self.led_devices = self.device_discovery().await?;
+        if let Some(l_devices) = led_devices {
+            self.led_devices = l_devices;
+        } else {
+            self.led_devices = self.device_discovery().await?;
+        }
 
         // Connect devices //
         for led_device in self.led_devices.iter_mut() {
@@ -95,7 +100,7 @@ where
                 .connect()
                 .await?;
 
-            // Service discovery //
+            // Service discovry //
             led_device
                 .peripheral()
                 .as_ref()
