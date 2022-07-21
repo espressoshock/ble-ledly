@@ -3,6 +3,7 @@ use crate::communication_protocol::generic_rgb_light::{
 };
 use crate::device::traits::{Device, Light, RGB};
 use crate::errors::BluetoothError;
+use core::fmt;
 
 use btleplug::api::bleuuid::uuid_from_u16;
 use btleplug::api::Characteristic;
@@ -181,5 +182,17 @@ impl RGB for LedDevice {
         self.write_raw(&GenericRGBLight::encode_color(self, red, green, blue))
             .await
             .unwrap_or_else(|err| println!("Error setting light brightness: {:?}", err));
+    }
+}
+
+//---------//
+// Display //
+//---------//
+impl fmt::Display for LedDevice {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(peripheral) = self.peripheral.as_ref() {
+            return write!(f, "{} ({})", self.name, peripheral.address());
+        }
+        write!(f, "{} (Unknown)", self.name)
     }
 }
