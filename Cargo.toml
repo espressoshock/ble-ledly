@@ -1,6 +1,6 @@
 [package]
 name = "ble-ledly"
-version = "0.1.0-alpha.0"
+version = "0.1.0-alpha.1"
 edition = "2021"
 authors = ["Vincenzo Buono"]
 license = "MIT"
@@ -12,7 +12,7 @@ light controller.
 """
 readme = "README.md"
 keywords = ["ledstrip", "ledlight", "ble", "led", "rgb"]
-categories = ["harware-support"]
+categories = ["hardware-support"]
 
 [lib]
 path = "src/lib.rs"
