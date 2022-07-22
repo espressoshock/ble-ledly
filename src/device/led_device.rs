@@ -78,6 +78,12 @@ impl Device for LedDevice {
     fn peripheral(&self) -> &Option<Peripheral> {
         &self.peripheral
     }
+    fn address(&self) -> Option<String>{
+        if let Some(peripheral) = self.peripheral.as_ref() {
+            return Some(peripheral.address().to_string());
+        }
+        None
+    }
     fn write_char(&self, nth: Option<usize>) -> Option<&Characteristic> {
         (&self).write_chars.0.get(nth.unwrap_or(self.write_chars.1))
     }
