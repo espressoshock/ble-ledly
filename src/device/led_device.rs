@@ -12,8 +12,8 @@ pub struct LedDevice<'p> {
     peripheral: Option<Peripheral>,
 
     // default communication chars
-    write_chars: Option<&'p Characteristic>,
-    read_chars: Option<&'p Characteristic>,
+    write_char: Option<&'p Characteristic>,
+    read_char: Option<&'p Characteristic>,
 }
 
 impl<'p> LedDevice<'p> {
@@ -21,15 +21,33 @@ impl<'p> LedDevice<'p> {
         name: &str,
         alias: &str,
         peripheral: Option<Peripheral>,
-        write_chars: Option<&'p Characteristic>,
-        read_chars: Option<&'p Characteristic>,
+        write_char: Option<&'p Characteristic>,
+        read_char: Option<&'p Characteristic>,
     ) -> Self {
         Self {
             name: name.to_string(),
             alias: alias.to_string(),
             peripheral,
-            write_chars,
-            read_chars,
+            write_char,
+            read_char,
         }
+    }
+    //--------//
+    // Getter //
+    //--------//
+    fn alias(&self) -> &str {
+        &self.alias
+    }
+    fn name(&self) -> &str {
+        &self.name
+    }
+    fn peripheral(&self) -> &Option<Peripheral> {
+        &self.peripheral
+    }
+    fn write_char(&self) -> Option<&'p Characteristic> {
+        self.write_char
+    }
+    fn read_char(&self) -> Option<&'p Characteristic> {
+        self.read_char
     }
 }
