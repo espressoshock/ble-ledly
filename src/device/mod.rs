@@ -38,3 +38,21 @@ impl<'a, D: Device<'a> + std::marker::Sync> Disconnect for D {
     }
 }
 
+#[async_trait]
+impl<'p, D: Device<'p> + std::marker::Sync> Write for D {
+    async fn push(&self, raw_bytes: &[u8]) -> Result<(), BluetoothError> {
+        //TODO: Implement different WriteType(s)
+        self.peripheral()
+            .as_ref()
+            .ok_or(BluetoothError::InvalidPeripheralReference)?
+            .write(
+                self.write_char()
+                    .ok_or(BluetoothError::InvalidCharacteristic)?,
+                raw_bytes,
+                WriteType::WithoutResponse,
+            )
+            .await?;
+
+        Ok(())
+    }
+}
