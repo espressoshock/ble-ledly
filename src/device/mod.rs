@@ -23,3 +23,18 @@ pub trait Write {
     async fn push(&self, raw_bytes: &[u8]) -> Result<(), BluetoothError>;
 }
 
+//-------------------------//
+// Blanket implementations //
+//-------------------------//
+#[async_trait]
+impl<'a, D: Device<'a> + std::marker::Sync> Disconnect for D {
+    async fn leave(&self) -> Result<(), BluetoothError> {
+        self.peripheral()
+            .as_ref()
+            .ok_or(BluetoothError::InvalidPeripheralReference)?
+            .disconnect()
+            .await?;
+        Ok(())
+    }
+}
+
