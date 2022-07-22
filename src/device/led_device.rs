@@ -2,6 +2,9 @@ use btleplug::api::Characteristic;
 use btleplug::api::{Peripheral as _, WriteType};
 use btleplug::platform::Peripheral;
 
+use uuid::Uuid;
+use btleplug::api::bleuuid::uuid_from_u16;
+
 #[derive(Debug)]
 pub struct LedDevice<'p> {
     // BLE localname mapping
@@ -14,7 +17,12 @@ pub struct LedDevice<'p> {
     // default communication chars
     write_char: Option<&'p Characteristic>,
     read_char: Option<&'p Characteristic>,
+
+    // default write char uuid
+    write_char_uuid: Uuid,
 }
+// common to generic ble ic(s)
+pub const DEFAULT_WRITE_CHARACTERISTIC_UUID: Uuid = uuid_from_u16(0xFFD9);
 
 impl<'p> LedDevice<'p> {
     pub fn new(
@@ -23,6 +31,7 @@ impl<'p> LedDevice<'p> {
         peripheral: Option<Peripheral>,
         write_char: Option<&'p Characteristic>,
         read_char: Option<&'p Characteristic>,
+        write_char_uuid: Option<Uuid>,
     ) -> Self {
         Self {
             name: name.to_string(),
@@ -30,6 +39,7 @@ impl<'p> LedDevice<'p> {
             peripheral,
             write_char,
             read_char,
+            write_char_uuid: write_char_uuid.unwrap_or(DEFAULT_WRITE_CHARACTERISTIC_UUID),
         }
     }
     //--------//
@@ -43,6 +53,9 @@ impl<'p> LedDevice<'p> {
     }
     fn peripheral(&self) -> &Option<Peripheral> {
         &self.peripheral
+    }
+    fn write_char_uuid(&self) -> &Uuid {
+        &self.write_char_uuid
     }
     fn write_char(&self) -> Option<&'p Characteristic> {
         self.write_char
