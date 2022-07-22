@@ -4,13 +4,38 @@ use btleplug::api::Characteristic;
 use btleplug::api::{Peripheral as _, WriteType};
 use btleplug::platform::Peripheral;
 
+use uuid::Uuid;
+
 use async_trait::async_trait;
 
 pub mod led_device;
 
 pub trait Device<'p> {
+    fn new(
+        name: &str,
+        alias: &str,
+        peripheral: Option<Peripheral>,
+        write_char: Option<&'p Characteristic>,
+        read_char: Option<&'p Characteristic>,
+        write_char_uuid: Option<Uuid>,
+    ) -> Self;
+    //--------//
+    // Getter //
+    //--------//
+    fn alias(&self) -> &str;
+    fn name(&self) -> &str;
     fn peripheral(&self) -> &Option<Peripheral>;
+    fn write_char_uuid(&self) -> &Uuid;
     fn write_char(&self) -> Option<&'p Characteristic>;
+    fn read_char(&self) -> Option<&'p Characteristic>;
+
+    //--------//
+    // Setter //
+    //--------//
+    fn set_alias(&mut self, alias: &str);
+    fn set_name(&mut self, name: &str);
+    fn set_peripheral(&mut self, peripheral: Peripheral);
+    fn set_write_char_uuid(&mut self, char_uuid: Uuid);
 }
 
 #[async_trait]

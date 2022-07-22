@@ -2,8 +2,10 @@ use btleplug::api::Characteristic;
 use btleplug::api::{Peripheral as _, WriteType};
 use btleplug::platform::Peripheral;
 
-use uuid::Uuid;
 use btleplug::api::bleuuid::uuid_from_u16;
+use uuid::Uuid;
+
+use crate::device::Device;
 
 #[derive(Debug)]
 pub struct LedDevice<'p> {
@@ -24,8 +26,8 @@ pub struct LedDevice<'p> {
 // common to generic ble ic(s)
 pub const DEFAULT_WRITE_CHARACTERISTIC_UUID: Uuid = uuid_from_u16(0xFFD9);
 
-impl<'p> LedDevice<'p> {
-    pub fn new(
+impl<'p>Device<'p> for LedDevice<'p> {
+    fn new(
         name: &str,
         alias: &str,
         peripheral: Option<Peripheral>,
@@ -42,6 +44,7 @@ impl<'p> LedDevice<'p> {
             write_char_uuid: write_char_uuid.unwrap_or(DEFAULT_WRITE_CHARACTERISTIC_UUID),
         }
     }
+    // TODO: remove getters and setters
     //--------//
     // Getter //
     //--------//
@@ -63,4 +66,21 @@ impl<'p> LedDevice<'p> {
     fn read_char(&self) -> Option<&'p Characteristic> {
         self.read_char
     }
+
+    //--------//
+    // Setter //
+    //--------//
+    fn set_alias(&mut self, alias: &str) {
+        self.alias = alias.to_string();
+    }
+    fn set_name(&mut self, name: &str) {
+        self.name = name.to_string();
+    }
+    fn set_peripheral(&mut self, peripheral: Peripheral) {
+        self.peripheral = Some(peripheral);
+    }
+    fn set_write_char_uuid(&mut self, char_uuid: Uuid) {
+        self.write_char_uuid = char_uuid;
+    }
 }
+
