@@ -1,6 +1,8 @@
+use std::collections::BTreeSet;
+
 use crate::error::BluetoothError;
 
-use btleplug::api::Characteristic;
+use btleplug::api::{Characteristic, Service};
 use btleplug::api::{Peripheral as _, WriteType};
 use btleplug::platform::Peripheral;
 
@@ -18,16 +20,19 @@ pub trait Device<'p> {
         write_char: Option<&'p Characteristic>,
         read_char: Option<&'p Characteristic>,
         write_char_uuid: Option<Uuid>,
+        services: Option<BTreeSet<Service>>
     ) -> Self;
     //--------//
     // Getter //
     //--------//
     fn alias(&self) -> &str;
     fn name(&self) -> &str;
-    fn peripheral(&self) -> &Option<Peripheral>;
+    fn peripheral(&self) -> Option<&Peripheral>;
     fn write_char_uuid(&self) -> &Uuid;
     fn write_char(&self) -> Option<&'p Characteristic>;
     fn read_char(&self) -> Option<&'p Characteristic>;
+    fn characteristic<'f>(&'f self) -> BTreeSet<&'f Characteristic>;
+    fn services(&self) -> &BTreeSet<Service>;
 
     //--------//
     // Setter //
@@ -35,7 +40,9 @@ pub trait Device<'p> {
     fn set_alias(&mut self, alias: &str);
     fn set_name(&mut self, name: &str);
     fn set_peripheral(&mut self, peripheral: Peripheral);
+    fn set_write_char(&mut self, characteristic: &'p Characteristic);
     fn set_write_char_uuid(&mut self, char_uuid: Uuid);
+    fn set_services(&mut self, services: BTreeSet<Service>);
 }
 
 #[async_trait]
