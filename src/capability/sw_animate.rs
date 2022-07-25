@@ -14,8 +14,8 @@ use tokio::time;
 //---------//
 // animate //
 //---------//
-pub enum SWAnimateOption {
-    Breathing(ColorOption, SWAnimationRepeat, SWAnimationSpeed),
+pub enum SWAnimateOption<'e> {
+    Breathing(&'e ColorOption, &'e SWAnimationRepeat, &'e SWAnimationSpeed),
 }
 
 pub enum SWAnimationRepeat {
@@ -49,11 +49,24 @@ fn sw_animation_speed(speed: &SWAnimationSpeed) -> u64 {
 
 #[async_trait]
 pub trait SWAnimate {
-    async fn set<P: Protocol + std::marker::Send + std::marker::Sync>(
+    async fn set<'e, P: Protocol + std::marker::Send + std::marker::Sync>(
+        &self,
+        protocol: &'e P,
+        option: &'e SWAnimateOption,
+    ) -> Result<(), BluetoothError>;
+    async fn _breathing<P: Protocol + std::marker::Send + std::marker::Sync>(
+        &self,
+        protocol: &P,
+        color: &ColorOption,
+        interval: u64,
+    ) -> Result<(), BluetoothError>;
+    async fn breathing<P: Protocol + std::marker::Send + std::marker::Sync>(
         &self,
         protocol: P,
-        option: SWAnimateOption,
-    ) -> Result<(), BluetoothError>;
+        color: &ColorOption,
+        repeat: &SWAnimationRepeat,
+        speed: &SWAnimationSpeed,
+    );
 }
 
 //-------------------------//
@@ -62,54 +75,70 @@ pub trait SWAnimate {
 #[async_trait]
 impl<D: Device + std::marker::Sync> SWAnimate for D {
     // bound type to be transferred across threads
-    async fn set<P: Protocol + std::marker::Send + std::marker::Sync>(
+    async fn set<'e, P: Protocol + std::marker::Send + std::marker::Sync>(
         &self,
-        protocol: P,
-        option: &SWAnimateOption,
+        protocol: &'e P,
+        option: &'e SWAnimateOption,
     ) -> Result<(), BluetoothError> {
-        self.push(&protocol.sw_animate(option)[..]).await?;
-        Ok(())
-    }
-}
-
-//------------//
-// Animations //
-//------------//
-// TODO: Implement exponential fading
-async fn _breathing<P: Protocol + std::marker::Send + std::marker::Sync>(
-    protocol: &P,
-    color: &ColorOption,
-    interval: u64,
-) {
-    // TODO: replace loops with sine impl.
-    for i in 0..=100 {
-        protocol
-            .brightness(&BrightnessOption::LevelWithColor(i as f32 / 100 as f32, *color));
-        time::sleep(Duration::from_millis(interval)).await;
-    }
-    for i in (0..=100).rev() {
-        protocol
-            .brightness(&BrightnessOption::LevelWithColor(i as f32 / 100 as f32, *color));
-        time::sleep(Duration::from_millis(interval)).await;
-    }
-}
-
-pub async fn breathing<P: Protocol + std::marker::Send + std::marker::Sync>(
-    protocol: P,
-    color: &ColorOption,
-    repeat: &SWAnimationRepeat,
-    speed: &SWAnimationSpeed,
-) {
-    match repeat {
-        SWAnimationRepeat::FiniteCount(count) => {
-            let mut i = 0;
-            while i < *count {
-                _breathing(&protocol, &color, sw_animation_speed(speed)).await;
-                i += 1;
+        match option {
+            SWAnimateOption::Breathing(color, repeat, speed) => {
+                self._breathing(protocol, color, sw_animation_speed(speed))
+                    .await?;
             }
         }
-        SWAnimationRepeat::InfiniteCount => loop {
-            _breathing(&protocol, color, sw_animation_speed(speed)).await;
-        },
+        Ok(())
+    }
+
+    //------------//
+    // Animations //
+    //------------//
+    // TODO: Implement exponential fading
+    async fn _breathing<P: Protocol + std::marker::Send + std::marker::Sync>(
+        &self,
+        protocol: &P,
+        color: &ColorOption,
+        interval: u64,
+    ) -> Result<(), BluetoothError> {
+        // TODO: replace loops with sine impl.
+        for i in 0..=100 {
+            let e_bytes = protocol.brightness(&BrightnessOption::LevelWithColor(
+                i as f32 / 100 as f32,
+                color,
+            ));
+            self.push(&(e_bytes)[..]).await?;
+            time::sleep(Duration::from_millis(interval)).await;
+        }
+        for i in (0..=100).rev() {
+            let e_bytes = protocol.brightness(&BrightnessOption::LevelWithColor(
+                i as f32 / 100 as f32,
+                color,
+            ));
+            self.push(&(e_bytes)[..]).await?;
+            time::sleep(Duration::from_millis(interval)).await;
+        }
+        Ok(())
+    }
+
+    async fn breathing<P: Protocol + std::marker::Send + std::marker::Sync>(
+        &self,
+        protocol: P,
+        color: &ColorOption,
+        repeat: &SWAnimationRepeat,
+        speed: &SWAnimationSpeed,
+    ) {
+        match repeat {
+            SWAnimationRepeat::FiniteCount(count) => {
+                let mut i = 0;
+                while i < *count {
+                    self._breathing(&protocol, &color, sw_animation_speed(speed))
+                        .await;
+                    i += 1;
+                }
+            }
+            SWAnimationRepeat::InfiniteCount => loop {
+                self._breathing(&protocol, color, sw_animation_speed(speed))
+                    .await;
+            },
+        }
     }
 }
