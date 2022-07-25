@@ -10,16 +10,16 @@ use crate::capability::color::ColorOption;
 //------------//
 // Brightness //
 //------------//
-pub enum BrightnessOption {
-    Level(u8),
-    LevelWithColor(u8, ColorOption),
+pub enum BrightnessOption<'e> {
+    Level(f32),
+    LevelWithColor(f32, &'e ColorOption),
 }
 #[async_trait]
 pub trait Brightness {
-    async fn set<P: Protocol + std::marker::Send + std::marker::Sync>(
+    async fn set<'e, P: Protocol + std::marker::Send + std::marker::Sync>(
         &self,
-        protocol: P,
-        option: BrightnessOption,
+        protocol: &'e P,
+        option: &'e BrightnessOption,
     ) -> Result<(), BluetoothError>;
 }
 
@@ -29,10 +29,10 @@ pub trait Brightness {
 #[async_trait]
 impl<D: Device + std::marker::Sync> Brightness for D {
     // bound type to be transferred across threads
-    async fn set<P: Protocol + std::marker::Send + std::marker::Sync>(
+    async fn set<'e, P: Protocol + std::marker::Send + std::marker::Sync>(
         &self,
-        protocol: P,
-        option: BrightnessOption,
+        protocol: &'e P,
+        option: &'e BrightnessOption,
     ) -> Result<(), BluetoothError> {
         self.push(&protocol.brightness(option)[..]).await?;
         Ok(())

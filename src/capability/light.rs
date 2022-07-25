@@ -15,10 +15,10 @@ pub enum LightOption {
 }
 #[async_trait]
 pub trait Light {
-    async fn set<P: Protocol + std::marker::Send + std::marker::Sync>(
+    async fn set<'e, P: Protocol + std::marker::Send + std::marker::Sync>(
         &self,
-        protocol: P,
-        option: LightOption,
+        protocol: &'e P,
+        option: &'e LightOption,
     ) -> Result<(), BluetoothError>;
 }
 
@@ -28,10 +28,10 @@ pub trait Light {
 #[async_trait]
 impl<D: Device + std::marker::Sync> Light for D {
     // bound type to be transferred across threads
-    async fn set<P: Protocol + std::marker::Send + std::marker::Sync>(
+    async fn set<'e, P: Protocol + std::marker::Send + std::marker::Sync>(
         &self,
-        protocol: P,
-        option: LightOption,
+        protocol: &'e P,
+        option: &'e LightOption,
     ) -> Result<(), BluetoothError> {
         self.push(&protocol.light(option)[..]).await?;
         Ok(())
