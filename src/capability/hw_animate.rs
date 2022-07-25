@@ -10,17 +10,17 @@ use crate::capability::color::ColorOption;
 //---------//
 // animate //
 //---------//
-pub enum AnimateOption {
-    Pulsating(StaticColorOption, AnimationSpeedSetting),
+pub enum HWAnimateOption {
+    Pulsating(HWStaticColorOption, HWAnimationSpeedSetting),
 }
 
-pub enum StaticColorOption {
+pub enum HWStaticColorOption {
     Red,
     Green,
     Blue,
 }
 // TODO: more meaningf&ul name
-pub enum AnimationSpeedSetting {
+pub enum HWAnimationSpeedSetting {
     Speed1,
     Speed2,
     Speed3,
@@ -34,11 +34,11 @@ pub enum AnimationSpeedSetting {
 
 
 #[async_trait]
-pub trait Animate {
+pub trait HWAnimate {
     async fn set<P: Protocol + std::marker::Send + std::marker::Sync>(
         &self,
         protocol: P,
-        option: AnimateOption,
+        option: HWAnimateOption,
     ) -> Result<(), BluetoothError>;
 }
 
@@ -46,14 +46,14 @@ pub trait Animate {
 // Blanket implementations //
 //-------------------------//
 #[async_trait]
-impl<D: Device + std::marker::Sync> Animate for D {
+impl<D: Device + std::marker::Sync> HWAnimate for D {
     // bound type to be transferred across threads
     async fn set<P: Protocol + std::marker::Send + std::marker::Sync>(
         &self,
         protocol: P,
-        option: AnimateOption,
+        option: HWAnimateOption,
     ) -> Result<(), BluetoothError> {
-        self.push(&protocol.animate(option)[..]).await?;
+        self.push(&protocol.hw_animate(option)[..]).await?;
         Ok(())
     }
 }
