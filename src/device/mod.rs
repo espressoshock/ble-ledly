@@ -12,15 +12,14 @@ use async_trait::async_trait;
 
 pub mod led_device;
 
-pub trait Device<'p> {
+pub trait Device {
     fn new(
         name: &str,
         alias: &str,
         peripheral: Option<Peripheral>,
-        write_char: Option<&'p Characteristic>,
-        read_char: Option<&'p Characteristic>,
+        write_char: Option<Characteristic>,
+        read_char: Option<Characteristic>,
         write_char_uuid: Option<Uuid>,
-        services: Option<BTreeSet<Service>>
     ) -> Self;
     //--------//
     // Getter //
@@ -29,10 +28,9 @@ pub trait Device<'p> {
     fn name(&self) -> &str;
     fn peripheral(&self) -> Option<&Peripheral>;
     fn write_char_uuid(&self) -> &Uuid;
-    fn write_char(&self) -> Option<&'p Characteristic>;
-    fn read_char(&self) -> Option<&'p Characteristic>;
-    fn characteristic<'f>(&'f self) -> BTreeSet<&'f Characteristic>;
-    fn services(&self) -> &BTreeSet<Service>;
+    fn write_char(&self) -> Option<&Characteristic>;
+    fn read_char(&self) -> Option<&Characteristic>;
+    fn default_write_characteristic_uuid(&self) -> Uuid;
 
     //--------//
     // Setter //
@@ -40,9 +38,8 @@ pub trait Device<'p> {
     fn set_alias(&mut self, alias: &str);
     fn set_name(&mut self, name: &str);
     fn set_peripheral(&mut self, peripheral: Peripheral);
-    fn set_write_char(&mut self, characteristic: &'p Characteristic);
+    fn set_write_char(&mut self, characteristic: &Characteristic);
     fn set_write_char_uuid(&mut self, char_uuid: Uuid);
-    fn set_services(&mut self, services: BTreeSet<Service>);
 }
 
 #[async_trait]
@@ -59,7 +56,7 @@ pub trait Write {
 // Blanket implementations //
 //-------------------------//
 #[async_trait]
-impl<'a, D: Device<'a> + std::marker::Sync> Disconnect for D {
+impl<D: Device + std::marker::Sync> Disconnect for D {
     async fn leave(&self) -> Result<(), BluetoothError> {
         self.peripheral()
             .as_ref()
@@ -71,7 +68,7 @@ impl<'a, D: Device<'a> + std::marker::Sync> Disconnect for D {
 }
 
 #[async_trait]
-impl<'p, D: Device<'p> + std::marker::Sync> Write for D {
+impl<D: Device + std::marker::Sync> Write for D {
     async fn push(&self, raw_bytes: &[u8]) -> Result<(), BluetoothError> {
         //TODO: Implement different WriteType(s)
         self.peripheral()

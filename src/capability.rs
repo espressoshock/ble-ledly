@@ -26,7 +26,7 @@ pub trait Light {
 // Blanket implementations //
 //-------------------------//
 #[async_trait]
-impl<'a, D: Device<'a> + std::marker::Sync> Light for D {
+impl<D: Device + std::marker::Sync> Light for D {
     // bound type to be transferred across threads
     async fn set<P: Protocol + std::marker::Send + std::marker::Sync>(
         &self,
@@ -36,8 +36,4 @@ impl<'a, D: Device<'a> + std::marker::Sync> Light for D {
         self.push(protocol.light(option)).await?;
         Ok(())
     }
-}
-
-pub fn light<D, P>(device: D, protocol: P) -> Result<(), CapabilityError> {
-    Ok(())
 }

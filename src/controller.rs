@@ -1,4 +1,4 @@
-use crate::device::{Device, led_device};
+use crate::device::{led_device, Device};
 
 use crate::error::BluetoothError;
 // use std::error::Error;
@@ -10,8 +10,8 @@ use uuid::Uuid;
 use std::time::Duration;
 use tokio::time;
 
-pub struct Controller<'p, D: Device<'p>> {
-    prefix: &'p str,
+pub struct Controller<D: Device> {
+    prefix: String,
 
     ble_manager: Manager,
     ble_adapter: Adapter,
@@ -20,12 +20,9 @@ pub struct Controller<'p, D: Device<'p>> {
     led_devices: Vec<D>,
 }
 
-impl<'p, D: Device<'p>> Controller<'p, D> {
+impl<D: Device> Controller<D> {
     // Constructor //
-    pub async fn new<'a>(prefix: &'a str) -> Result<Controller<'p, D>, BluetoothError>
-    where
-        'a: 'p,
-    {
+    pub async fn new(prefix: &str) -> Result<Controller<D>, BluetoothError> {
         let ble_manager = Manager::new().await?;
 
         let ble_adapter = ble_manager.adapters().await?;
@@ -35,11 +32,20 @@ impl<'p, D: Device<'p>> Controller<'p, D> {
             .ok_or(BluetoothError::InvalidBluetoothAdapter)?;
 
         Ok(Self {
-            prefix,
+            prefix: prefix.to_string(),
             ble_manager,
             ble_adapter: client,
             led_devices: Vec::<D>::new(),
         })
+    }
+    //---------//
+    // Getters //
+    //---------//
+    pub fn ble_manager(&self) -> &Manager {
+        &self.ble_manager
+    }
+    pub fn list(&mut self) -> &mut Vec<D> {
+        &mut self.led_devices
     }
     //------------------//
     // Device Discovery //
@@ -57,10 +63,9 @@ impl<'p, D: Device<'p>> Controller<'p, D> {
                 .ok_or(BluetoothError::InvalidPeriperipheralProperty)?
                 .local_name
                 .unwrap_or(String::from("Unknown"));
-            let services = p.services();
 
             if name.contains(&self.prefix) {
-                led_devices.push(D::new(&name, &name, Some(p), None, None, None, Some(services)));
+                led_devices.push(D::new(&name, &name, Some(p), None, None, None));
             }
         }
         Ok(led_devices)
@@ -68,14 +73,11 @@ impl<'p, D: Device<'p>> Controller<'p, D> {
     //---------//
     // Connect //
     //---------//j
-    pub async fn connect<'a>(
-        &'a mut self,
+    pub async fn connect(
+        &mut self,
         led_devices: Option<Vec<D>>,
         characteristics_uuid: Option<Uuid>,
-    ) -> Result<(), BluetoothError>
-    where
-        'a: 'p,
-    {
+    ) -> Result<(), BluetoothError> {
         // Discover devices //
         if let Some(l_devices) = led_devices {
             self.led_devices = l_devices;
@@ -101,20 +103,22 @@ impl<'p, D: Device<'p>> Controller<'p, D> {
                 .discover_services()
                 .await?;
 
-            // ugh
-            led_device.set_services(led_device.peripheral().unwrap().services());
-
-
-            let characteric = &led_device.characteristic();
-            let c = characteric
-                .iter()
-                .find(|c| c.uuid == characteristics_uuid.unwrap_or(*led_device.write_char_uuid()))
+            let characteric = led_device
+                .peripheral()
+                .as_ref()
+                .ok_or(BluetoothError::InvalidPeripheralReference)?
+                .characteristics()
+                .into_iter()
+                .find(|c| {
+                    c.uuid
+                        == characteristics_uuid
+                            .unwrap_or(led_device.default_write_characteristic_uuid())
+                })
                 .ok_or(BluetoothError::NotFoundTargetCharacteristic)?;
-
 
             // Add write characteric //
             // only one supported for now
-            led_device.set_write_char(c);
+            led_device.set_write_char(&characteric);
         }
         Ok(())
     }
