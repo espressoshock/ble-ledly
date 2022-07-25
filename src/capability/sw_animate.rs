@@ -1,11 +1,9 @@
-// Define Device Capabilities
-
 use super::brightness::BrightnessOption;
 use crate::capability::color::ColorOption;
 use crate::communication_protocol::Protocol;
 use crate::device::Device;
 use crate::device::Write;
-use crate::error::{BluetoothError, CapabilityError};
+use crate::error::{BluetoothError};
 use async_trait::async_trait;
 
 use std::time::Duration;
@@ -54,19 +52,19 @@ pub trait SWAnimate {
         protocol: &'e P,
         option: &'e SWAnimateOption,
     ) -> Result<(), BluetoothError>;
-    async fn _breathing<P: Protocol + std::marker::Send + std::marker::Sync>(
+    async fn _breathing<'e, P: Protocol + std::marker::Send + std::marker::Sync>(
         &self,
-        protocol: &P,
-        color: &ColorOption,
+        protocol: &'e P,
+        color: &'e ColorOption,
         interval: u64,
     ) -> Result<(), BluetoothError>;
-    async fn breathing<P: Protocol + std::marker::Send + std::marker::Sync>(
+    async fn breathing<'e, P: Protocol + std::marker::Send + std::marker::Sync>(
         &self,
-        protocol: P,
-        color: &ColorOption,
-        repeat: &SWAnimationRepeat,
-        speed: &SWAnimationSpeed,
-    );
+        protocol: &'e P,
+        color: &'e ColorOption,
+        repeat: &'e SWAnimationRepeat,
+        speed: &'e SWAnimationSpeed,
+    ) -> Result<(), BluetoothError>;
 }
 
 //-------------------------//
@@ -82,8 +80,7 @@ impl<D: Device + std::marker::Sync> SWAnimate for D {
     ) -> Result<(), BluetoothError> {
         match option {
             SWAnimateOption::Breathing(color, repeat, speed) => {
-                self._breathing(protocol, color, sw_animation_speed(speed))
-                    .await?;
+                self.breathing(protocol, color, repeat, speed).await?;
             }
         }
         Ok(())
@@ -93,10 +90,10 @@ impl<D: Device + std::marker::Sync> SWAnimate for D {
     // Animations //
     //------------//
     // TODO: Implement exponential fading
-    async fn _breathing<P: Protocol + std::marker::Send + std::marker::Sync>(
+    async fn _breathing<'e, P: Protocol + std::marker::Send + std::marker::Sync>(
         &self,
-        protocol: &P,
-        color: &ColorOption,
+        protocol: &'e P,
+        color: &'e ColorOption,
         interval: u64,
     ) -> Result<(), BluetoothError> {
         // TODO: replace loops with sine impl.
@@ -119,26 +116,27 @@ impl<D: Device + std::marker::Sync> SWAnimate for D {
         Ok(())
     }
 
-    async fn breathing<P: Protocol + std::marker::Send + std::marker::Sync>(
+    async fn breathing<'e, P: Protocol + std::marker::Send + std::marker::Sync>(
         &self,
-        protocol: P,
-        color: &ColorOption,
-        repeat: &SWAnimationRepeat,
-        speed: &SWAnimationSpeed,
-    ) {
+        protocol: &'e P,
+        color: &'e ColorOption,
+        repeat: &'e SWAnimationRepeat,
+        speed: &'e SWAnimationSpeed,
+    ) -> Result<(), BluetoothError> {
         match repeat {
             SWAnimationRepeat::FiniteCount(count) => {
                 let mut i = 0;
                 while i < *count {
-                    self._breathing(&protocol, &color, sw_animation_speed(speed))
-                        .await;
+                    self._breathing(protocol, &color, sw_animation_speed(speed))
+                        .await?;
                     i += 1;
                 }
             }
             SWAnimationRepeat::InfiniteCount => loop {
-                self._breathing(&protocol, color, sw_animation_speed(speed))
-                    .await;
+                self._breathing(protocol, &color, sw_animation_speed(speed))
+                    .await?;
             },
         }
+        Ok(())
     }
 }

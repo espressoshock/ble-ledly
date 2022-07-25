@@ -12,6 +12,13 @@ use crate::{
 
 pub struct GenericRGB {}
 
+impl Default for GenericRGB {
+    fn default() -> Self {
+        Self {}
+    }
+}
+
+
 impl Protocol for GenericRGB {
     // Light //
     fn light(&self, option: &LightOption) -> Vec<u8> {
@@ -32,7 +39,7 @@ impl Protocol for GenericRGB {
 
     fn brightness(&self, option: &BrightnessOption) -> Vec<u8> {
         match option {
-            BrightnessOption::Level(level) => {
+            BrightnessOption::Level(_level) => {
                 unimplemented!("Brightness without ColorOption, not supported yet")
             }
             BrightnessOption::LevelWithColor(level, color) => match color {

@@ -4,6 +4,8 @@ use btleplug::platform::Peripheral;
 use btleplug::api::bleuuid::uuid_from_u16;
 use uuid::Uuid;
 
+use std::fmt;
+
 use crate::device::Device;
 
 #[derive(Debug)]
@@ -54,6 +56,12 @@ impl Device for LedDevice {
     fn name(&self) -> &str {
         &self.name
     }
+    fn address(&self) -> Option<String> {
+        if let Some(peripheral) = self.peripheral.as_ref() {
+            return Some(peripheral.address().to_string());
+        }
+        None
+    }
     fn peripheral(&self) -> Option<&Peripheral> {
         self.peripheral.as_ref()
     }
@@ -66,7 +74,7 @@ impl Device for LedDevice {
     fn read_char(&self) -> Option<&Characteristic> {
         self.read_char.as_ref()
     }
-    fn default_write_characteristic_uuid(&self) -> Uuid{
+    fn default_write_characteristic_uuid(&self) -> Uuid {
         DEFAULT_WRITE_CHARACTERISTIC_UUID.clone()
     }
 
@@ -87,5 +95,13 @@ impl Device for LedDevice {
     }
     fn set_write_char(&mut self, characteristic: &Characteristic) {
         self.write_char = Some(characteristic.clone());
+    }
+}
+//--------------//
+// Display impl //
+//--------------//
+impl fmt::Display for LedDevice {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} ({})", self.name(), self.address().unwrap_or(String::from("-")))
     }
 }

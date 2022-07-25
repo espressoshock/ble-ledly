@@ -1,7 +1,6 @@
-use crate::device::{led_device, Device};
+use crate::device::Device;
 
 use crate::error::BluetoothError;
-// use std::error::Error;
 
 use btleplug::api::{Central, Manager as _, Peripheral as _, ScanFilter};
 use btleplug::platform::{Adapter, Manager};
@@ -66,10 +65,7 @@ impl<D: Device> Controller<D> {
     //------------------//
     // Device Discovery //
     //------------------//
-    pub async fn device_discovery(
-        &self,
-        name_contains: Option<&str>,
-    ) -> Result<Vec<D>, BluetoothError> {
+    pub async fn device_discovery(&self) -> Result<Vec<D>, BluetoothError> {
         self.ble_adapter.start_scan(ScanFilter::default()).await?;
         time::sleep(Duration::from_secs(2)).await;
 
@@ -83,14 +79,8 @@ impl<D: Device> Controller<D> {
                 .local_name
                 .unwrap_or(String::from("Unknown"));
 
-            if let Some(f_name) = name_contains {
-                if name.contains(f_name) {
-                    led_devices.push(D::new(&name, &name, Some(p), None, None, None));
-                }
-            } else {
-                if name.contains(self.prefix.as_ref().unwrap_or(&"".to_string())) {
-                    led_devices.push(D::new(&name, &name, Some(p), None, None, None));
-                }
+            if name.contains(self.prefix.as_ref().unwrap_or(&"".to_string())) {
+                led_devices.push(D::new(&name, &name, Some(p), None, None, None));
             }
         }
         Ok(led_devices)
@@ -107,7 +97,7 @@ impl<D: Device> Controller<D> {
         if let Some(l_devices) = led_devices {
             self.led_devices = l_devices;
         } else {
-            self.led_devices = self.device_discovery(None).await?;
+            self.led_devices = self.device_discovery().await?;
         }
 
         // Connect devices //

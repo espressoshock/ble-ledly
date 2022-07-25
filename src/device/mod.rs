@@ -1,18 +1,17 @@
-use std::collections::BTreeSet;
-
 use crate::error::BluetoothError;
 
-use btleplug::api::{Characteristic, Service};
+use btleplug::api::Characteristic;
 use btleplug::api::{Peripheral as _, WriteType};
 use btleplug::platform::Peripheral;
 
 use uuid::Uuid;
 
 use async_trait::async_trait;
+use std::fmt;
 
 pub mod led_device;
 
-pub trait Device {
+pub trait Device : fmt::Display {
     fn new(
         name: &str,
         alias: &str,
@@ -26,6 +25,7 @@ pub trait Device {
     //--------//
     fn alias(&self) -> &str;
     fn name(&self) -> &str;
+    fn address(&self) -> Option<String>;
     fn peripheral(&self) -> Option<&Peripheral>;
     fn write_char_uuid(&self) -> &Uuid;
     fn write_char(&self) -> Option<&Characteristic>;

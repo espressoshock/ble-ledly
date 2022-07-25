@@ -76,9 +76,8 @@
 //!       }
 //!   }
 //! ```
-
-pub mod animation;
+pub mod capability;
 pub mod communication_protocol;
 pub mod controller;
 pub mod device;
-pub mod errors;
+pub mod error;
