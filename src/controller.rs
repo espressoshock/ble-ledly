@@ -11,7 +11,7 @@ use std::time::Duration;
 use tokio::time;
 
 pub struct Controller<D: Device> {
-    prefix: String,
+    prefix: Option<String>,
 
     ble_manager: Manager,
     ble_adapter: Adapter,
@@ -22,7 +22,7 @@ pub struct Controller<D: Device> {
 
 impl<D: Device> Controller<D> {
     // Constructor //
-    pub async fn new(prefix: &str) -> Result<Controller<D>, BluetoothError> {
+    pub async fn new() -> Result<Controller<D>, BluetoothError> {
         let ble_manager = Manager::new().await?;
 
         let ble_adapter = ble_manager.adapters().await?;
@@ -32,7 +32,23 @@ impl<D: Device> Controller<D> {
             .ok_or(BluetoothError::InvalidBluetoothAdapter)?;
 
         Ok(Self {
-            prefix: prefix.to_string(),
+            prefix: None,
+            ble_manager,
+            ble_adapter: client,
+            led_devices: Vec::<D>::new(),
+        })
+    }
+    pub async fn new_with_prefix(prefix: &str) -> Result<Controller<D>, BluetoothError> {
+        let ble_manager = Manager::new().await?;
+
+        let ble_adapter = ble_manager.adapters().await?;
+        let client = ble_adapter
+            .into_iter()
+            .nth(0) // take first
+            .ok_or(BluetoothError::InvalidBluetoothAdapter)?;
+
+        Ok(Self {
+            prefix: Some(prefix.to_string()),
             ble_manager,
             ble_adapter: client,
             led_devices: Vec::<D>::new(),
@@ -50,7 +66,10 @@ impl<D: Device> Controller<D> {
     //------------------//
     // Device Discovery //
     //------------------//
-    pub async fn device_discovery(&self) -> Result<Vec<D>, BluetoothError> {
+    pub async fn device_discovery(
+        &self,
+        name_contains: Option<&str>,
+    ) -> Result<Vec<D>, BluetoothError> {
         self.ble_adapter.start_scan(ScanFilter::default()).await?;
         time::sleep(Duration::from_secs(2)).await;
 
@@ -64,8 +83,14 @@ impl<D: Device> Controller<D> {
                 .local_name
                 .unwrap_or(String::from("Unknown"));
 
-            if name.contains(&self.prefix) {
-                led_devices.push(D::new(&name, &name, Some(p), None, None, None));
+            if let Some(f_name) = name_contains {
+                if name.contains(f_name) {
+                    led_devices.push(D::new(&name, &name, Some(p), None, None, None));
+                }
+            } else {
+                if name.contains(self.prefix.as_ref().unwrap_or(&"".to_string())) {
+                    led_devices.push(D::new(&name, &name, Some(p), None, None, None));
+                }
             }
         }
         Ok(led_devices)
@@ -82,7 +107,7 @@ impl<D: Device> Controller<D> {
         if let Some(l_devices) = led_devices {
             self.led_devices = l_devices;
         } else {
-            self.led_devices = self.device_discovery().await?;
+            self.led_devices = self.device_discovery(None).await?;
         }
 
         // Connect devices //
