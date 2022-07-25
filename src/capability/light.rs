@@ -33,7 +33,7 @@ impl<D: Device + std::marker::Sync> Light for D {
         protocol: P,
         option: LightOption,
     ) -> Result<(), BluetoothError> {
-        self.push(protocol.light(option)).await?;
+        self.push(&protocol.light(option)[..]).await?;
         Ok(())
     }
 }
