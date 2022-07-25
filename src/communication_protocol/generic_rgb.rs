@@ -1,5 +1,5 @@
 use crate::{
-    capability::{color::ColorOption, light::LightOption},
+    capability::{color::ColorOption, light::LightOption, brightness::BrightnessOption},
     communication_protocol::Protocol,
 };
 
@@ -22,5 +22,17 @@ impl Protocol for GenericRGB {
         match option {
             ColorOption::RGB(r, g, b) => vec![0x56, r, g, b, 0x00, 0xF0, 0xAA],
         }
+    }
+
+
+    fn brightness(&self, option: BrightnessOption) -> Vec<u8> {
+        match option {
+            BrightnessOption::Level(level) => unimplemented!("Brightness without ColorOption, not supported yet"),
+            BrightnessOption::LevelWithColor(level, color) => {
+                match color {
+                    ColorOption::RGB(r, g, b) => self.color(ColorOption::RGB(r*level, g*level, b*level)),
+                }
+        }
+    }
     }
 }
