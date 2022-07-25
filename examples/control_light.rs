@@ -12,7 +12,7 @@ use tokio::time;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // Create a new Light controller with prefix
+    // Create a new Light controller
     let mut controller = Controller::<LedDevice>::new().await?;
 
     // Discover devices (scan)
