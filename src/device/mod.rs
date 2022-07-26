@@ -1,4 +1,3 @@
-use crate::device::led_device::CharactericKind;
 use crate::error::BluetoothError;
 
 use btleplug::api::Characteristic;
@@ -8,10 +7,27 @@ use btleplug::platform::Peripheral;
 use uuid::Uuid;
 
 use async_trait::async_trait;
-use enumflags2::BitFlags;
+use enumflags2::{bitflags, BitFlags};
 use std::fmt;
 
 pub mod led_device;
+
+const BT_BASE_UUID: u128 = 0x00000000_0000_1000_8000_00805f9b34fb;
+
+// wrapper for native ble charprops
+#[bitflags]
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum CharactericKind {
+    Broadcast = 0x01,
+    Read = 0x02,
+    WriteWithoutResponse = 0x04,
+    Write = 0x08,
+    Notify = 0x10,
+    Indicate = 0x20,
+    AuthenticatedSignedWrites = 0x40,
+    ExtendedProperties = 0x80,
+}
 
 pub trait Device: fmt::Display {
     fn new(
@@ -20,7 +36,6 @@ pub trait Device: fmt::Display {
         peripheral: Option<Peripheral>,
         write_char: Option<Characteristic>,
         read_char: Option<Characteristic>,
-        write_char_uuid: Option<Uuid>,
     ) -> Self;
     //--------//
     // Getter //
@@ -29,7 +44,6 @@ pub trait Device: fmt::Display {
     fn name(&self) -> &str;
     fn address(&self) -> Option<String>;
     fn peripheral(&self) -> Option<&Peripheral>;
-    fn write_char_uuid(&self) -> &Uuid;
     fn write_char(&self) -> Option<&Characteristic>;
     fn read_char(&self) -> Option<&Characteristic>;
     fn default_write_characteristic_uuid(&self) -> Uuid;
@@ -66,7 +80,25 @@ pub trait Device: fmt::Display {
     fn set_name(&mut self, name: &str);
     fn set_peripheral(&mut self, peripheral: Peripheral);
     fn set_write_char(&mut self, characteristic: &Characteristic);
-    fn set_write_char_uuid(&mut self, char_uuid: Uuid);
+    fn set_write_char_with_uuid(&mut self, uuid: &Uuid) -> Result<(), BluetoothError> {
+        let w_char = self.peripheral()
+            .as_ref()
+            .ok_or(BluetoothError::InvalidPeripheralReference)?
+            .characteristics()
+            .into_iter()
+            .find(|c| c.uuid.as_u128() == uuid.as_u128())
+            .ok_or(BluetoothError::NotFoundTargetCharacteristic)?;
+        self.set_write_char(&w_char);
+        Ok(())
+    }
+    fn set_write_char_with_u16(&mut self, u16: u16) -> Result<(), BluetoothError> {
+        self.set_write_char_with_u32(u16 as u32) // extend it to 32 bits
+    }
+    fn set_write_char_with_u32(&mut self, u32: u32) -> Result<(), BluetoothError> {
+        let uuid = Uuid::from_u128(BT_BASE_UUID | ((u32 as u128) << 96));
+        self.set_write_char_with_uuid(&uuid)
+    }
+
 }
 
 #[async_trait]
