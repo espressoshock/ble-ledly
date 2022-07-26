@@ -80,7 +80,7 @@ impl<D: Device> Controller<D> {
                 .unwrap_or(String::from("Unknown"));
 
             if name.contains(self.prefix.as_ref().unwrap_or(&"".to_string())) {
-                led_devices.push(D::new(&name, &name, Some(p), None, None, None));
+                led_devices.push(D::new(&name, &name, Some(p), None, None));
             }
         }
         Ok(led_devices)
@@ -88,10 +88,39 @@ impl<D: Device> Controller<D> {
     //---------//
     // Connect //
     //---------//j
-    pub async fn connect(
+    pub async fn connect(&mut self, led_devices: Option<Vec<D>>) -> Result<(), BluetoothError> {
+        // Discover devices //
+        if let Some(l_devices) = led_devices {
+            self.led_devices = l_devices;
+        } else {
+            self.led_devices = self.device_discovery().await?;
+        }
+
+        // Connect devices //
+        for led_device in self.led_devices.iter_mut() {
+            // Connect //
+            led_device
+                .peripheral()
+                .as_ref()
+                .ok_or(BluetoothError::InvalidPeripheralReference)?
+                .connect()
+                .await?;
+
+            // Service discovry //
+            led_device
+                .peripheral()
+                .as_ref()
+                .ok_or(BluetoothError::InvalidPeripheralReference)?
+                .discover_services()
+                .await?;
+        }
+        Ok(())
+    }
+    pub async fn connect_with_characteristic(
         &mut self,
         led_devices: Option<Vec<D>>,
-        characteristics_uuid: Option<Uuid>,
+        write_characteristic_uuid: Uuid,
+        _read_characteristic_uuid: Option<Uuid>,
     ) -> Result<(), BluetoothError> {
         // Discover devices //
         if let Some(l_devices) = led_devices {
@@ -124,11 +153,7 @@ impl<D: Device> Controller<D> {
                 .ok_or(BluetoothError::InvalidPeripheralReference)?
                 .characteristics()
                 .into_iter()
-                .find(|c| {
-                    c.uuid
-                        == characteristics_uuid
-                            .unwrap_or(led_device.default_write_characteristic_uuid())
-                })
+                .find(|c| c.uuid.as_u128() == write_characteristic_uuid.as_u128())
                 .ok_or(BluetoothError::NotFoundTargetCharacteristic)?;
 
             // Add write characteric //
