@@ -8,8 +8,8 @@ use btleplug::platform::Peripheral;
 use uuid::Uuid;
 
 use async_trait::async_trait;
-use std::fmt;
 use enumflags2::BitFlags;
+use std::fmt;
 
 pub mod led_device;
 
@@ -33,11 +33,31 @@ pub trait Device: fmt::Display {
     fn write_char(&self) -> Option<&Characteristic>;
     fn read_char(&self) -> Option<&Characteristic>;
     fn default_write_characteristic_uuid(&self) -> Uuid;
-    fn characteristics(&self) -> Option<Vec<Characteristic>>;
+    fn characteristics(&self) -> Option<Vec<Characteristic>> {
+        if let Some(peripheral) = self.peripheral().as_ref() {
+            return Some(
+                peripheral
+                    .characteristics()
+                    .into_iter()
+                    .collect::<Vec<Characteristic>>(),
+            );
+        }
+        None
+    }
     fn characteristics_by_type(
         &self,
         kinds: BitFlags<CharactericKind>,
-    ) -> Option<Vec<Characteristic>>;
+    ) -> Option<Vec<Characteristic>> {
+        if let Some(chars) = self.characteristics() {
+            return Some(
+                chars
+                    .into_iter()
+                    .filter(|c| c.properties.bits() == kinds.bits())
+                    .collect(),
+            );
+        }
+        None
+    }
 
     //--------//
     // Setter //

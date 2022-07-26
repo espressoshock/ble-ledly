@@ -94,28 +94,6 @@ impl Device for LedDevice {
     fn default_write_characteristic_uuid(&self) -> Uuid {
         DEFAULT_WRITE_CHARACTERISTIC_UUID.clone()
     }
-    fn characteristics(&self) -> Option<Vec<Characteristic>> {
-        if let Some(peripheral) = self.peripheral.as_ref() {
-            return Some(
-                peripheral
-                    .characteristics()
-                    .into_iter()
-                    .collect::<Vec<Characteristic>>(),
-            );
-        }
-        None
-    }
-    fn characteristics_by_type(&self, kinds: BitFlags<CharactericKind>) -> Option<Vec<Characteristic>> {
-        if let Some(chars) = self.characteristics() {
-            return Some(
-                chars
-                    .into_iter()
-                    .filter(|c| c.properties.bits() == kinds.bits())
-                    .collect(),
-            );
-        }
-        None
-    }
 
     //--------//
     // Setter //
