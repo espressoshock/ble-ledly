@@ -1,4 +1,4 @@
-use crate::device::Device;
+use crate::device::{CharKind, Device, UuidKind};
 
 use crate::error::BluetoothError;
 
@@ -53,6 +53,18 @@ impl<D: Device> Controller<D> {
             led_devices: Vec::<D>::new(),
         })
     }
+    pub fn set_all_char(
+        &mut self,
+        char_kind: &CharKind,
+        uuid_kind: &UuidKind,
+    ) -> Result<(), BluetoothError> {
+        self.led_devices
+            .iter_mut()
+            .map(|device| device.set_char(char_kind, uuid_kind))
+            .collect::<Result<(), BluetoothError>>()?;
+        Ok(())
+    }
+
     //---------//
     // Getters //
     //---------//
