@@ -4,6 +4,7 @@ use ble_ledly::communication_protocol::generic_rgb::GenericRGB;
 use ble_ledly::controller::Controller;
 use ble_ledly::device::led_device::LedDevice;
 use ble_ledly::device::Device;
+use ble_ledly::device::{CharKind, UuidKind};
 
 use std::error::Error;
 use std::time::Duration;
@@ -28,7 +29,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .collect();
 
     // Connect
-    controller.connect(Some(lights)).await?;
+    controller.connect_with_devices(lights).await?;
 
     // Choose your communication protocol
     let protocol = GenericRGB::default();
@@ -43,11 +44,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         // devices, as one controller support devices with different communication
         // protocols
         // Set it with an Uuid, an u32, or u16
-        // E.g.
-        // let write_characteristic_uuid: Uuid = Uuid::parse_str("0000ffd9-0000-1000-8000-00805f9b34fb")?;
-        // light.set_write_char_with_uuid(&write_characteristic_uuid)?;
-        // Or
-        light.set_write_char_with_u16(0xFFD9)?;
+        light.set_char(&CharKind::Write, &UuidKind::Uuid16(0xFFD9))?;
 
         /////////////////////////////////
         // Control the lights as usual //
