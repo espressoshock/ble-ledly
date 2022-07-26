@@ -11,8 +11,6 @@ use std::error::Error;
 use std::time::Duration;
 use tokio::time;
 
-use uuid::Uuid;
-
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     // Create a new Light controller
@@ -32,7 +30,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .collect();
 
     // Connect
-    controller.connect(Some(lights)).await?;
+    controller.connect_with_devices(lights).await?;
 
     // Choose your communication protocol
     let protocol = GenericRGB::default();
