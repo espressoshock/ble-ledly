@@ -2,8 +2,8 @@ use ble_ledly::capability::color::*;
 use ble_ledly::capability::light::*;
 use ble_ledly::communication_protocol::generic_rgb::GenericRGB;
 use ble_ledly::controller::Controller;
-use ble_ledly::device::led_device::CharactericKind;
 use ble_ledly::device::led_device::LedDevice;
+use ble_ledly::device::CharactericKind;
 use ble_ledly::device::Device;
 
 use std::error::Error;
@@ -29,7 +29,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .collect();
 
     // Connect
-    controller.connect(Some(lights), None).await?;
+    controller.connect(Some(lights)).await?;
 
     // Choose your communication protocol
     let protocol = GenericRGB::default();
@@ -69,7 +69,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
         // set it as a write_char for the current device
         // you can set different write characteristics for different
-        // devices, as one controller support devices with different communication 
+        // devices, as one controller support devices with different communication
         // protocols
         light.set_write_char(&chosen.get(0).unwrap());
 
