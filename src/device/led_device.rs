@@ -1,19 +1,36 @@
-use btleplug::api::{Characteristic, Peripheral as _};
+use btleplug::api::{CharPropFlags, Characteristic, Peripheral as _};
 use btleplug::platform::Peripheral;
 
 use btleplug::api::bleuuid::uuid_from_u16;
+use enumflags2::_internal::RawBitFlags;
 use uuid::Uuid;
 
 use std::fmt;
 
 use crate::device::Device;
+use enumflags2::{bitflags, BitFlags};
+
+// wrapper for native ble charprops
+#[bitflags]
+#[repr(u8)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum CharactericKind {
+    Broadcast = 0x01,
+    Read = 0x02,
+    WriteWithoutResponse = 0x04,
+    Write = 0x08,
+    Notify = 0x10,
+    Indicate = 0x20,
+    AuthenticatedSignedWrites = 0x40,
+    ExtendedProperties = 0x80,
+}
 
 #[derive(Debug)]
 pub struct LedDevice {
     // BLE localname mapping
     pub name: String,
     // user-settable alias
-    alias: String,
+    pub alias: String,
 
     // underlying BLE Pheripheral
     peripheral: Option<Peripheral>,
@@ -77,6 +94,28 @@ impl Device for LedDevice {
     fn default_write_characteristic_uuid(&self) -> Uuid {
         DEFAULT_WRITE_CHARACTERISTIC_UUID.clone()
     }
+    fn characteristics(&self) -> Option<Vec<Characteristic>> {
+        if let Some(peripheral) = self.peripheral.as_ref() {
+            return Some(
+                peripheral
+                    .characteristics()
+                    .into_iter()
+                    .collect::<Vec<Characteristic>>(),
+            );
+        }
+        None
+    }
+    fn characteristics_by_type(&self, kinds: BitFlags<CharactericKind>) -> Option<Vec<Characteristic>> {
+        if let Some(chars) = self.characteristics() {
+            return Some(
+                chars
+                    .into_iter()
+                    .filter(|c| c.properties.bits() == kinds.bits())
+                    .collect(),
+            );
+        }
+        None
+    }
 
     //--------//
     // Setter //
@@ -102,6 +141,11 @@ impl Device for LedDevice {
 //--------------//
 impl fmt::Display for LedDevice {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} ({})", self.name(), self.address().unwrap_or(String::from("-")))
+        write!(
+            f,
+            "{} ({})",
+            self.name(),
+            self.address().unwrap_or(String::from("-"))
+        )
     }
 }

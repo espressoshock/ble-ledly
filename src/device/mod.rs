@@ -1,3 +1,4 @@
+use crate::device::led_device::CharactericKind;
 use crate::error::BluetoothError;
 
 use btleplug::api::Characteristic;
@@ -8,10 +9,11 @@ use uuid::Uuid;
 
 use async_trait::async_trait;
 use std::fmt;
+use enumflags2::BitFlags;
 
 pub mod led_device;
 
-pub trait Device : fmt::Display {
+pub trait Device: fmt::Display {
     fn new(
         name: &str,
         alias: &str,
@@ -31,6 +33,11 @@ pub trait Device : fmt::Display {
     fn write_char(&self) -> Option<&Characteristic>;
     fn read_char(&self) -> Option<&Characteristic>;
     fn default_write_characteristic_uuid(&self) -> Uuid;
+    fn characteristics(&self) -> Option<Vec<Characteristic>>;
+    fn characteristics_by_type(
+        &self,
+        kinds: BitFlags<CharactericKind>,
+    ) -> Option<Vec<Characteristic>>;
 
     //--------//
     // Setter //
