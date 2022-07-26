@@ -2,8 +2,7 @@ use ble_ledly::capability::color::*;
 use ble_ledly::capability::light::*;
 use ble_ledly::communication_protocol::generic_rgb::GenericRGB;
 use ble_ledly::controller::Controller;
-use ble_ledly::device::led_device::LedDevice;
-use ble_ledly::device::CharactericKind;
+use ble_ledly::device::{led_device::LedDevice, OpKind};
 use ble_ledly::device::Device;
 
 use std::error::Error;
@@ -29,7 +28,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .collect();
 
     // Connect
-    controller.connect(Some(lights)).await?;
+    controller.connect_with_devices(lights).await?;
 
     // Choose your communication protocol
     let protocol = GenericRGB::default();
@@ -50,7 +49,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         println!("--- Filtered characteristics for device {}: ---", light);
 
         // otherwise inspect all characteristic by supported operation kind
-        let char_kind_filter = CharactericKind::Write | CharactericKind::WriteWithoutResponse;
+        let char_kind_filter = OpKind::Write | OpKind::WriteWithoutResponse;
 
         for characteristic in light
             .characteristics_by_type(char_kind_filter)
