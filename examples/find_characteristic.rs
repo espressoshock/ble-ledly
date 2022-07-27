@@ -1,10 +1,9 @@
 use ble_ledly::capability::color::*;
 use ble_ledly::capability::light::*;
-use ble_ledly::capability::sw_animate::*;
 use ble_ledly::communication_protocol::GenericRGB;
 use ble_ledly::Controller;
-use ble_ledly::device::LedDevice;
-use ble_ledly::device::{CharKind, UuidKind};
+use ble_ledly::device::{LedDevice, OpKind};
+use ble_ledly::device::Device;
 
 use std::error::Error;
 use std::time::Duration;
@@ -34,15 +33,48 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Choose your communication protocol
     let protocol = GenericRGB::default();
 
-    // set the default write Characteristic
-    // for all devices. Optionally you can also
-    // set it per-device. Look the examples folder for more
-    controller.set_all_char(&CharKind::Write, &UuidKind::Uuid16(0xFFD9))?;
-
     // list all connected devices
     let connected_lights = controller.list();
     for light in connected_lights.iter_mut() {
-        println!("Connected to : {}", light.name);
+        println!("--- Found characteristics for device {}: ---", light);
+
+        // inspect all characteristic for every device
+        for characteristic in light.characteristics().unwrap().iter() {
+            println!(
+                "\tUuid: {:?}, Type: {:?}",
+                characteristic.uuid, characteristic.properties
+            );
+        }
+
+        println!("--- Filtered characteristics for device {}: ---", light);
+
+        // otherwise inspect all characteristic by supported operation kind
+        let char_kind_filter = OpKind::Write | OpKind::WriteWithoutResponse;
+
+        for characteristic in light
+            .characteristics_by_type(char_kind_filter)
+            .unwrap()
+            .iter()
+        {
+            println!(
+                "\tUuid: {:?}, Type: {:?}",
+                characteristic.uuid, characteristic.properties
+            );
+        }
+
+        // choose the characteristic to use to write to the device
+        let chosen = light.characteristics_by_type(char_kind_filter).unwrap();
+        println!("\nChosen {:?}\n", chosen.get(0));
+
+        // set it as a write_char for the current device
+        // you can set different write characteristics for different
+        // devices, as one controller support devices with different communication
+        // protocols
+        light.set_write_char(&chosen.get(0).unwrap());
+
+        /////////////////////////////////
+        // Control the lights as usual //
+        /////////////////////////////////
 
         // Control the lights
         println!("Turning light on...");
@@ -57,33 +89,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
         light.color(&protocol, 0, 0, 255).await?;
         time::sleep(Duration::from_millis(800)).await;
 
-        println!("SW Animation - Breathing effect...");
-        light
-            .breathing(
-                &GenericRGB {},
-                &ColorOption::RGB(255, 0, 0),
-                &SWAnimationRepeat::FiniteCount(2),
-                &SWAnimationSpeed::Fastest,
-            )
-            .await?;
-        light
-            .breathing(
-                &GenericRGB {},
-                &ColorOption::RGB(0, 255, 0),
-                &SWAnimationRepeat::FiniteCount(2),
-                &SWAnimationSpeed::Fastest,
-            )
-            .await?;
-        light
-            .breathing(
-                &GenericRGB {},
-                &ColorOption::RGB(0, 0, 255),
-                &SWAnimationRepeat::FiniteCount(2),
-                &SWAnimationSpeed::Fastest,
-            )
-            .await?;
-
-        // Control the lights
         println!("Turning light off...");
         light.turn_off(&protocol).await?;
     }

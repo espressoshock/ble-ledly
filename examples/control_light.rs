@@ -2,9 +2,10 @@ use ble_ledly::capability::color::*;
 use ble_ledly::capability::hw_animate::*;
 use ble_ledly::capability::light::*;
 use ble_ledly::capability::sw_animate::*;
-use ble_ledly::communication_protocol::generic_rgb::GenericRGB;
-use ble_ledly::controller::Controller;
-use ble_ledly::device::led_device::LedDevice;
+use ble_ledly::communication_protocol::GenericRGB;
+use ble_ledly::device::LedDevice;
+use ble_ledly::device::{CharKind, UuidKind};
+use ble_ledly::Controller;
 
 use std::error::Error;
 use std::time::Duration;
@@ -29,10 +30,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .collect();
 
     // Connect
-    controller.connect(Some(lights), None).await?;
+    controller.connect_with_devices(lights).await?;
 
     // Choose your communication protocol
     let protocol = GenericRGB::default();
+
+    // set the default write Characteristic
+    // for all devices. Optionally you can also
+    // set it per-device. Look the examples folder for more
+    controller.set_all_char(&CharKind::Write, &UuidKind::Uuid16(0xFFD9))?;
 
     // list all connected devices
     let connected_lights = controller.list();

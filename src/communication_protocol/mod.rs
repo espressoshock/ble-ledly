@@ -7,6 +7,13 @@ use crate::capability::{
 
 pub mod generic_rgb;
 
+//----------//
+// Re-export//
+//----------//
+////////////////////////////////////////
+pub use self::generic_rgb::GenericRGB;
+////////////////////////////////////////
+
 pub trait Protocol {
     fn light(&self, option: &LightOption) -> Vec<u8>;
     fn color(&self, option: &ColorOption) -> Vec<u8>;

@@ -1,11 +1,7 @@
-use crate::device::Device;
-
+use crate::device::{CharKind, Device, UuidKind};
 use crate::error::BluetoothError;
-
 use btleplug::api::{Central, Manager as _, Peripheral as _, ScanFilter};
 use btleplug::platform::{Adapter, Manager};
-use uuid::Uuid;
-
 use std::time::Duration;
 use tokio::time;
 
@@ -16,11 +12,25 @@ pub struct Controller<D: Device> {
     ble_adapter: Adapter,
 
     //TODO: provide key-like access - hashmap
-    led_devices: Vec<D>,
+    devices: Vec<D>,
 }
 
 impl<D: Device> Controller<D> {
-    // Constructor //
+    /// Creates a new `Device` controller
+    ///
+    /// # Examples
+    ///
+    ///
+    /// ```no_run
+    /// use ble_ledly::device::LedDevice;
+    /// use ble_ledly::Controller;
+    /// use std::error::Error;
+    ///
+    ///  async fn test() -> Result<(), Box<dyn Error>> {
+    ///     let mut controller = Controller::<LedDevice>::new().await?;
+    ///     Ok(())
+    /// }
+    /// ```
     pub async fn new() -> Result<Controller<D>, BluetoothError> {
         let ble_manager = Manager::new().await?;
 
@@ -34,9 +44,27 @@ impl<D: Device> Controller<D> {
             prefix: None,
             ble_manager,
             ble_adapter: client,
-            led_devices: Vec::<D>::new(),
+            devices: Vec::<D>::new(),
         })
     }
+
+    /// Creates a new `Device` controller with `Prefix`.
+    /// The `prefix` is used to automatically filter the
+    /// devices found during `device_discovery()`; The filter looks
+    /// if the `prefix` __id contained__ in the device name.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ble_ledly::device::LedDevice;
+    /// use ble_ledly::Controller;
+    /// use std::error::Error;
+    ///
+    ///  async fn test() -> Result<(), Box<dyn Error>> {
+    ///     let mut controller = Controller::<LedDevice>::new_with_prefix("QHM-").await?;
+    ///     Ok(())
+    /// }
+    /// ```
     pub async fn new_with_prefix(prefix: &str) -> Result<Controller<D>, BluetoothError> {
         let ble_manager = Manager::new().await?;
 
@@ -50,26 +78,80 @@ impl<D: Device> Controller<D> {
             prefix: Some(prefix.to_string()),
             ble_manager,
             ble_adapter: client,
-            led_devices: Vec::<D>::new(),
+            devices: Vec::<D>::new(),
         })
     }
+
+    /// Sets all the devices default _Characteristic_ (Write or Read)
+    /// to the provided value. Global shortcut, instead of setting, per-device _Characteristic_
+    /// configuration
+    ///
+    /// # Examples
+    ///
+    /// ```compile_fail
+    /// controller.set_all_char(&CharKind::Write, &UuidKind::Uuid16(0xFFD9))?;
+    /// ````
+    pub fn set_all_char(
+        &mut self,
+        char_kind: &CharKind,
+        uuid_kind: &UuidKind,
+    ) -> Result<(), BluetoothError> {
+        self.devices
+            .iter_mut()
+            .map(|device| device.set_char(char_kind, uuid_kind))
+            .collect::<Result<(), BluetoothError>>()?;
+        Ok(())
+    }
+
     //---------//
     // Getters //
     //---------//
     pub fn ble_manager(&self) -> &Manager {
         &self.ble_manager
     }
+
+    /// Return a list (Vec<D>) of all the connected devices.
+    /// The list is empty until devices are connected to the controller.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ble_ledly::device::LedDevice;
+    /// use ble_ledly::Controller;
+    /// use std::error::Error;
+    ///
+    ///  async fn test() -> Result<(), Box<dyn Error>> {
+    ///     let mut controller = Controller::<LedDevice>::new_with_prefix("QHM-").await?;
+    ///     let connected_lights = controller.list();
+    ///     Ok(())
+    /// }
     pub fn list(&mut self) -> &mut Vec<D> {
-        &mut self.led_devices
+        &mut self.devices
     }
+
     //------------------//
     // Device Discovery //
     //------------------//
+    /// Discover _ble devices_ by running a scan op. on the default adapter
+    /// and returns the found _devices__.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ble_ledly::device::LedDevice;
+    /// use ble_ledly::Controller;
+    /// use std::error::Error;
+    ///
+    ///  async fn test() -> Result<(), Box<dyn Error>> {
+    ///     let mut controller = Controller::<LedDevice>::new_with_prefix("QHM-").await?;
+    ///     let led_devices = controller.device_discovery().await?;
+    ///     Ok(())
+    /// }
     pub async fn device_discovery(&self) -> Result<Vec<D>, BluetoothError> {
         self.ble_adapter.start_scan(ScanFilter::default()).await?;
         time::sleep(Duration::from_secs(2)).await;
 
-        let mut led_devices: Vec<D> = Vec::new();
+        let mut devices: Vec<D> = Vec::new();
 
         for p in self.ble_adapter.peripherals().await? {
             let name = &p
@@ -80,30 +162,63 @@ impl<D: Device> Controller<D> {
                 .unwrap_or(String::from("Unknown"));
 
             if name.contains(self.prefix.as_ref().unwrap_or(&"".to_string())) {
-                led_devices.push(D::new(&name, &name, Some(p), None, None, None));
+                devices.push(D::new(&name, &name, Some(p), None, None));
             }
         }
-        Ok(led_devices)
+        Ok(devices)
     }
     //---------//
     // Connect //
-    //---------//j
-    pub async fn connect(
-        &mut self,
-        led_devices: Option<Vec<D>>,
-        characteristics_uuid: Option<Uuid>,
-    ) -> Result<(), BluetoothError> {
+    //---------//
+    /// Standalone `connect()` that can be used in conjunction with
+    /// `Controller::new_with_prefix(prfix)`; it automatically runs
+    /// a `device_discovery()` and connects to all devices that match `prefix`.
+    /// If no `prefix` is provided it attemps to connect to all available devices.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use ble_ledly::device::LedDevice;
+    /// use ble_ledly::Controller;
+    /// use std::error::Error;
+    ///
+    ///  async fn test() -> Result<(), Box<dyn Error>> {
+    ///     let mut controller = Controller::<LedDevice>::new_with_prefix("QHM-").await?;
+    ///     controller.connect().await?;
+    ///     Ok(())
+    /// }
+    pub async fn connect(&mut self) -> Result<(), BluetoothError> {
         // Discover devices //
-        if let Some(l_devices) = led_devices {
-            self.led_devices = l_devices;
-        } else {
-            self.led_devices = self.device_discovery().await?;
-        }
+        let devices = self.device_discovery().await?;
+        self._connect(devices).await?;
+        Ok(())
+    }
+
+    /// Connect to the devices passed as function's argument.
+    ///
+    /// # Examples
+    ///
+    /// ```compile_fail
+    /// let led_devices = controller.device_discovery().await?;
+    /// filter devices
+    /// let lights: Vec<LedDevice> = led_devices
+    ///    .into_iter()
+    ///   .filter(|device| device.name.contains("QHM-"))
+    ///    .collect();
+    /// controller.connect_with_devices(lights).await?;
+    ///
+    /// ```
+    pub async fn connect_with_devices(&mut self, devices: Vec<D>) -> Result<(), BluetoothError> {
+        self._connect(devices).await?;
+        Ok(())
+    }
+    async fn _connect(&mut self, devices: Vec<D>) -> Result<(), BluetoothError> {
+        self.devices = devices;
 
         // Connect devices //
-        for led_device in self.led_devices.iter_mut() {
+        for device in self.devices.iter_mut() {
             // Connect //
-            led_device
+            device
                 .peripheral()
                 .as_ref()
                 .ok_or(BluetoothError::InvalidPeripheralReference)?
@@ -111,29 +226,12 @@ impl<D: Device> Controller<D> {
                 .await?;
 
             // Service discovry //
-            led_device
+            device
                 .peripheral()
                 .as_ref()
                 .ok_or(BluetoothError::InvalidPeripheralReference)?
                 .discover_services()
                 .await?;
-
-            let characteric = led_device
-                .peripheral()
-                .as_ref()
-                .ok_or(BluetoothError::InvalidPeripheralReference)?
-                .characteristics()
-                .into_iter()
-                .find(|c| {
-                    c.uuid
-                        == characteristics_uuid
-                            .unwrap_or(led_device.default_write_characteristic_uuid())
-                })
-                .ok_or(BluetoothError::NotFoundTargetCharacteristic)?;
-
-            // Add write characteric //
-            // only one supported for now
-            led_device.set_write_char(&characteric);
         }
         Ok(())
     }

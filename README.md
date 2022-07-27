@@ -9,6 +9,7 @@
 
 ![ble-ledly](./assets/ble-ledly-logo-animated.png)
 
+
 Provides **out-of-the-box** support for generic _RGB_ led strips and **BLE** lamps and light bulbs.
 Designed to be _extensible_, allows to implement your own devices, communication protocol or
 both (_See the readme file for more_). Supports hardware specific animations (transferrable) and
@@ -79,7 +80,6 @@ For more examples, see the [examples](https://github.com/espressoshock/ble-ledly
 ```rust
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-
     // Create a new Light controller with prefix
     // Auto-filter devices that contain the prefix
     let mut controller = Controller::<LedDevice>::new_with_prefix("QHM-").await?;
@@ -101,15 +101,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
-### Light controls
+
+### Light controls 
 
 ```rust
 use ble_ledly::capability::color::*;
 use ble_ledly::capability::light::*;
 use ble_ledly::capability::sw_animate::*;
-use ble_ledly::communication_protocol::generic_rgb::GenericRGB;
-use ble_ledly::controller::Controller;
-use ble_ledly::device::led_device::LedDevice;
+use ble_ledly::communication_protocol::GenericRGB;
+use ble_ledly::Controller;
+use ble_ledly::device::LedDevice;
+use ble_ledly::device::{CharKind, UuidKind};
 
 use std::error::Error;
 use std::time::Duration;
@@ -134,10 +136,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .collect();
 
     // Connect
-    controller.connect(Some(lights), None).await?;
+    controller.connect_with_devices(lights).await?;
 
     // Choose your communication protocol
     let protocol = GenericRGB::default();
+
+    // set the default write Characteristic
+    // for all devices. Optionally you can also
+    // set it per-device. Look the examples folder for more
+    controller.set_all_char(&CharKind::Write, &UuidKind::Uuid16(0xFFD9))?;
 
     // list all connected devices
     let connected_lights = controller.list();
