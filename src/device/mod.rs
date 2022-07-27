@@ -10,6 +10,13 @@ use async_trait::async_trait;
 use enumflags2::{bitflags, BitFlags};
 use std::fmt;
 
+//----------//
+// Re-export//
+//----------//
+////////////////////////////////////
+pub use self::led_device::LedDevice;
+////////////////////////////////////
+
 pub mod led_device;
 
 const BT_BASE_UUID: u128 = 0x00000000_0000_1000_8000_00805f9b34fb;

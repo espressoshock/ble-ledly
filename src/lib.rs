@@ -109,3 +109,10 @@ pub mod communication_protocol;
 pub mod controller;
 pub mod device;
 pub mod error;
+
+//----------//
+// Re-export//
+//----------//
+////////////////////////////////////
+pub use self::controller::Controller;
+////////////////////////////////////
