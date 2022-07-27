@@ -2,10 +2,10 @@ use ble_ledly::capability::color::*;
 use ble_ledly::capability::hw_animate::*;
 use ble_ledly::capability::light::*;
 use ble_ledly::capability::sw_animate::*;
-use ble_ledly::communication_protocol::generic_rgb::GenericRGB;
-use ble_ledly::controller::Controller;
-use ble_ledly::device::led_device::LedDevice;
+use ble_ledly::communication_protocol::GenericRGB;
+use ble_ledly::device::LedDevice;
 use ble_ledly::device::{CharKind, UuidKind};
+use ble_ledly::Controller;
 
 use std::error::Error;
 use std::time::Duration;
