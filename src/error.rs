@@ -6,6 +6,7 @@ pub enum CapabilityError {
     Error,
 }
 
+/// Errors related to BLE communication
 #[derive(Error, Debug)]
 pub enum BluetoothError {
     #[error("The selected default bluetooth adapter [0] is invalid")]

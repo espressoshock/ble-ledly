@@ -38,16 +38,19 @@ impl Device for LedDevice {
             read_char: read_char.clone(),
         }
     }
-    // TODO: remove getters and setters
     //--------//
     // Getter //
     //--------//
+    /// Provides access to __user-settable__
+    /// device alias
     fn alias(&self) -> &str {
         &self.alias
     }
+    /// Provides access to the device local_name
     fn name(&self) -> &str {
         &self.name
     }
+    /// Provides access to _BLE-specific_ MAC device address
     fn address(&self) -> Option<String> {
         if let Some(peripheral) = self.peripheral.as_ref() {
             return Some(peripheral.address().to_string());
@@ -64,14 +67,14 @@ impl Device for LedDevice {
         self.read_char.as_ref()
     }
     fn default_write_characteristic_uuid(&self) -> Uuid {
-        // DEFAULT_WRITE_CHARACTERISTIC_UUID.clone()
-        let my_uuid = Uuid::new_v4();
-        my_uuid
+        unimplemented!()
     }
 
     //--------//
     // Setter //
     //--------//
+    /// Allows to set __user-settable__
+    /// device alias
     fn set_alias(&mut self, alias: &str) {
         self.alias = alias.to_string();
     }

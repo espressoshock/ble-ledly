@@ -21,7 +21,14 @@ pub mod led_device;
 
 const BT_BASE_UUID: u128 = 0x00000000_0000_1000_8000_00805f9b34fb;
 
-// wrapper for native ble charprops
+// Wrapper for native ble charprops
+/// Describe the _operation kind_ supported
+/// by each characteristic. Each `OpKind` can piped.
+///
+/// ## Examples
+/// ```
+/// let char_kind_filter = OpKind::Write | OpKind::WriteWithoutResponse;
+/// ```
 #[bitflags]
 #[repr(u8)]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -36,6 +43,8 @@ pub enum OpKind {
     ExtendedProperties = 0x80,
 }
 
+/// Allows to provide and wrap the default Device
+/// characteristic in different types.
 pub enum UuidKind {
     Uuid(Uuid),
     Uuid16(u16),
@@ -43,6 +52,7 @@ pub enum UuidKind {
     Uuid128(u128),
 }
 
+// Defines the characteristic kind, Write or Read.
 pub enum CharKind {
     Read,
     Write,
@@ -66,6 +76,19 @@ pub trait Device: fmt::Display {
     fn write_char(&self) -> Option<&Characteristic>;
     fn read_char(&self) -> Option<&Characteristic>;
     fn default_write_characteristic_uuid(&self) -> Uuid;
+
+    /// Return all the discovered device characteristic.
+    ///
+    /// ## Examples
+    /// ```
+    ///
+    ///   for characteristic in light.characteristics().unwrap().iter() {
+    ///        println!(
+    ///            "\tUuid: {:?}, Type: {:?}",
+    ///            characteristic.uuid, characteristic.properties
+    ///        );
+    ///    }
+    /// ```
     fn characteristics(&self) -> Option<Vec<Characteristic>> {
         if let Some(peripheral) = self.peripheral().as_ref() {
             return Some(
@@ -77,6 +100,25 @@ pub trait Device: fmt::Display {
         }
         None
     }
+
+    /// Return all the discovered device characteristic and allows
+    /// to filter them by type
+    ///
+    /// ## Examples
+    /// ```
+    ///       let char_kind_filter = OpKind::Write | OpKind::WriteWithoutResponse;
+
+    ///       for characteristic in light
+    ///           .characteristics_by_type(char_kind_filter)
+    ///           .unwrap()
+    ///           .iter()
+    ///       {
+    ///           println!(
+    ///               "\tUuid: {:?}, Type: {:?}",
+    ///               characteristic.uuid, characteristic.properties
+    ///           );
+    ///       }
+    /// ```
     fn characteristics_by_type(&self, kinds: BitFlags<OpKind>) -> Option<Vec<Characteristic>> {
         if let Some(chars) = self.characteristics() {
             return Some(
@@ -95,7 +137,25 @@ pub trait Device: fmt::Display {
     fn set_alias(&mut self, alias: &str);
     fn set_name(&mut self, name: &str);
     fn set_peripheral(&mut self, peripheral: Peripheral);
+
+    /// Allows to set the default characteristic (Write or Read),
+    /// per-device by providing the `Characteristic`.
+    ///
+    /// ## Examples
+    /// ```
+    ///    // Set it with an Uuid, an u32, or u16
+    ///    light.set_char(&CharKind::Write, &UuidKind::Uuid16(0xFFD9))?;
+    /// ```
     fn set_write_char(&mut self, characteristic: &Characteristic);
+
+    /// Allows to set the default characteristic (Write or Read),
+    /// per-device by providing the `UuidKind` of the characteristic.
+    ///
+    /// ## Examples
+    /// ```
+    ///    // Set it with an Uuid, an u32, or u16
+    ///    light.set_char(&CharKind::Write, &UuidKind::Uuid16(0xFFD9))?;
+    /// ```
     fn set_char(
         &mut self,
         char_kind: &CharKind,
