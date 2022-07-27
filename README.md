@@ -1,10 +1,14 @@
 # ble-ledly
-[![Crates.io](https://img.shields.io/badge/crates.io-v0.2.0-orange)](https://crates.io/crates/ble-ledly)
-[![Docs](https://img.shields.io/badge/docs-passing-brightgreen)](https://docs.rs/ble-ledly/)
-![MIT](https://img.shields.io/github/license/espressoshock/ble-ledly)
+[![Crates.io](https://img.shields.io/crates/v/ble-ledly)](https://crates.io/crates/ble-ledly)
+![Tests](https://github.com/espressoshock/ble-ledly/actions/workflows/test.yml/badge.svg)
+![Doc](https://github.com/espressoshock/ble-ledly/actions/workflows/doc.yml/badge.svg)
+[![Crates.io Downloads](https://img.shields.io/crates/d/ble-ledly?color=bright%20green)](https://crates.io/crates/ble-ledly)
+![MIT](https://img.shields.io/github/license/espressoshock/ble-ledly?color=blue)
+
 > _Customizable_ and _extensible_ cross-platform high-level _Bluetooth Low Energy_ light controller. 
 
-![ble-ledly](./assets/ble-ledly-animated-dark.png)
+![ble-ledly](./assets/ble-ledly-logo-animated.png)
+
 
 Provides **out-of-the-box** support for generic _RGB_ led strips and **BLE** lamps and light bulbs.
 Designed to be _extensible_, allows to implement your own devices, communication protocol or
@@ -43,7 +47,7 @@ light.turn_on(&protocol).await?;
 
 ### Transferrable vs. Non-transferrable
 
-_Transferrable animations_ are built-in in  the _target ble device_ which takes care of driving the led(s); once the command is sent, __no extra communication needed__ between the __client and ble light controller__. _Non-transferrable_ animations bypass the controller's built-in effects and allow for higher degree of customization while providing support for legacy or cheap _light controllers_ allowing to provide effects otherwise not available to the target device. As a consequence, this requires __continuous connection__ between the _controller and client_.
+_Transferrable animations_ are _built-in_ in the _target ble device_ which takes care of driving the led(s); once the command is sent, __no extra communication needed__ between the __client and ble light controller__. _Non-transferrable_ animations bypass the controller's built-in effects and allow for higher degree of customization while providing support for legacy or cheap _light controllers_ allowing to provide effects otherwise not available to the target device. As a consequence, this requires __continuous connection__ between the _controller and client_.
 
 ## Current support
 
@@ -76,7 +80,6 @@ For more examples, see the [examples](https://github.com/espressoshock/ble-ledly
 ```rust
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-
     // Create a new Light controller with prefix
     // Auto-filter devices that contain the prefix
     let mut controller = Controller::<LedDevice>::new_with_prefix("QHM-").await?;
