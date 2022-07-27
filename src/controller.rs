@@ -20,9 +20,16 @@ impl<D: Device> Controller<D> {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let mut controller = Controller::<LedDevice>::new().await?;
     ///
+    /// ```no_run
+    /// use ble_ledly::device::LedDevice;
+    /// use ble_ledly::Controller;
+    /// use std::error::Error;
+    ///
+    ///  async fn test() -> Result<(), Box<dyn Error>> {
+    ///     let mut controller = Controller::<LedDevice>::new().await?;
+    ///     Ok(())
+    /// }
     /// ```
     pub async fn new() -> Result<Controller<D>, BluetoothError> {
         let ble_manager = Manager::new().await?;
@@ -48,9 +55,15 @@ impl<D: Device> Controller<D> {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let mut controller = Controller::<LedDevice>::new_with_prefix("QHM-").await?;
+    /// ```no_run
+    /// use ble_ledly::device::LedDevice;
+    /// use ble_ledly::Controller;
+    /// use std::error::Error;
     ///
+    ///  async fn test() -> Result<(), Box<dyn Error>> {
+    ///     let mut controller = Controller::<LedDevice>::new_with_prefix("QHM-").await?;
+    ///     Ok(())
+    /// }
     /// ```
     pub async fn new_with_prefix(prefix: &str) -> Result<Controller<D>, BluetoothError> {
         let ble_manager = Manager::new().await?;
@@ -75,10 +88,9 @@ impl<D: Device> Controller<D> {
     ///
     /// # Examples
     ///
-    /// ```
-    // controller.set_all_char(&CharKind::Write, &UuidKind::Uuid16(0xFFD9))?;
-    ///
-    /// ```
+    /// ```compile_fail
+    /// controller.set_all_char(&CharKind::Write, &UuidKind::Uuid16(0xFFD9))?;
+    /// ````
     pub fn set_all_char(
         &mut self,
         char_kind: &CharKind,
@@ -103,10 +115,16 @@ impl<D: Device> Controller<D> {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let connected_lights = controller.list();
+    /// ```no_run
+    /// use ble_ledly::device::LedDevice;
+    /// use ble_ledly::Controller;
+    /// use std::error::Error;
     ///
-    /// ```
+    ///  async fn test() -> Result<(), Box<dyn Error>> {
+    ///     let mut controller = Controller::<LedDevice>::new_with_prefix("QHM-").await?;
+    ///     let connected_lights = controller.list();
+    ///     Ok(())
+    /// }
     pub fn list(&mut self) -> &mut Vec<D> {
         &mut self.devices
     }
@@ -119,10 +137,16 @@ impl<D: Device> Controller<D> {
     ///
     /// # Examples
     ///
-    /// ```
-    /// let led_devices = controller.device_discovery().await?;
+    /// ```no_run
+    /// use ble_ledly::device::LedDevice;
+    /// use ble_ledly::Controller;
+    /// use std::error::Error;
     ///
-    /// ```
+    ///  async fn test() -> Result<(), Box<dyn Error>> {
+    ///     let mut controller = Controller::<LedDevice>::new_with_prefix("QHM-").await?;
+    ///     let led_devices = controller.device_discovery().await?;
+    ///     Ok(())
+    /// }
     pub async fn device_discovery(&self) -> Result<Vec<D>, BluetoothError> {
         self.ble_adapter.start_scan(ScanFilter::default()).await?;
         time::sleep(Duration::from_secs(2)).await;
@@ -153,10 +177,16 @@ impl<D: Device> Controller<D> {
     ///
     /// # Examples
     ///
-    /// ```
-    /// controller.connect().await?;
+    /// ```no_run
+    /// use ble_ledly::device::LedDevice;
+    /// use ble_ledly::Controller;
+    /// use std::error::Error;
     ///
-    /// ```
+    ///  async fn test() -> Result<(), Box<dyn Error>> {
+    ///     let mut controller = Controller::<LedDevice>::new_with_prefix("QHM-").await?;
+    ///     controller.connect().await?;
+    ///     Ok(())
+    /// }
     pub async fn connect(&mut self) -> Result<(), BluetoothError> {
         // Discover devices //
         let devices = self.device_discovery().await?;
@@ -168,7 +198,7 @@ impl<D: Device> Controller<D> {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```compile_fail
     /// let led_devices = controller.device_discovery().await?;
     /// filter devices
     /// let lights: Vec<LedDevice> = led_devices

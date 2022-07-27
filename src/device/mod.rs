@@ -27,7 +27,10 @@ const BT_BASE_UUID: u128 = 0x00000000_0000_1000_8000_00805f9b34fb;
 ///
 /// ## Examples
 /// ```
+/// use ble_ledly::device::OpKind;
+///
 /// let char_kind_filter = OpKind::Write | OpKind::WriteWithoutResponse;
+/// assert_eq!(format!("{:04b}", char_kind_filter), "1100");
 /// ```
 #[bitflags]
 #[repr(u8)]
@@ -80,8 +83,7 @@ pub trait Device: fmt::Display {
     /// Return all the discovered device characteristic.
     ///
     /// ## Examples
-    /// ```
-    ///
+    /// ```compile_fail
     ///   for characteristic in light.characteristics().unwrap().iter() {
     ///        println!(
     ///            "\tUuid: {:?}, Type: {:?}",
@@ -105,7 +107,7 @@ pub trait Device: fmt::Display {
     /// to filter them by type
     ///
     /// ## Examples
-    /// ```
+    /// ```compile_fail
     ///       let char_kind_filter = OpKind::Write | OpKind::WriteWithoutResponse;
 
     ///       for characteristic in light
@@ -142,7 +144,7 @@ pub trait Device: fmt::Display {
     /// per-device by providing the `Characteristic`.
     ///
     /// ## Examples
-    /// ```
+    /// ```compile_fail
     ///    // Set it with an Uuid, an u32, or u16
     ///    light.set_char(&CharKind::Write, &UuidKind::Uuid16(0xFFD9))?;
     /// ```
@@ -152,7 +154,7 @@ pub trait Device: fmt::Display {
     /// per-device by providing the `UuidKind` of the characteristic.
     ///
     /// ## Examples
-    /// ```
+    /// ```compile_fail
     ///    // Set it with an Uuid, an u32, or u16
     ///    light.set_char(&CharKind::Write, &UuidKind::Uuid16(0xFFD9))?;
     /// ```
