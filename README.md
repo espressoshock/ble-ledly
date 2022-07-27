@@ -4,7 +4,7 @@
 ![MIT](https://img.shields.io/github/license/espressoshock/ble-ledly)
 > _Customizable_ and _extensible_ cross-platform high-level _Bluetooth Low Energy_ light controller. 
 
-![ble-ledly](./assets/ble-ledly-logo.png)
+![ble-ledly](./assets/ble-ledly-animated-dark.png)
 
 Provides **out-of-the-box** support for generic _RGB_ led strips and **BLE** lamps and light bulbs.
 Designed to be _extensible_, allows to implement your own devices, communication protocol or
@@ -69,7 +69,7 @@ This library has been designed with _extensibility in mind_.
 ## Usage
 
 An example using built-in _device_ **LedDevice** and _GenericRGB_ communication protocol.
-For more examples, see the [examples](https://github.com/espressoshock/ble-ledly) folder.
+For more examples, see the [examples](https://github.com/espressoshock/ble-ledly/tree/main/examples) folder.
 
 ### Minimal Configuration
 
