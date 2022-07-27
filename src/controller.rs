@@ -12,7 +12,7 @@ pub struct Controller<D: Device> {
     ble_adapter: Adapter,
 
     //TODO: provide key-like access - hashmap
-    led_devices: Vec<D>,
+    devices: Vec<D>,
 }
 
 impl<D: Device> Controller<D> {
@@ -37,7 +37,7 @@ impl<D: Device> Controller<D> {
             prefix: None,
             ble_manager,
             ble_adapter: client,
-            led_devices: Vec::<D>::new(),
+            devices: Vec::<D>::new(),
         })
     }
 
@@ -65,7 +65,7 @@ impl<D: Device> Controller<D> {
             prefix: Some(prefix.to_string()),
             ble_manager,
             ble_adapter: client,
-            led_devices: Vec::<D>::new(),
+            devices: Vec::<D>::new(),
         })
     }
 
@@ -84,7 +84,7 @@ impl<D: Device> Controller<D> {
         char_kind: &CharKind,
         uuid_kind: &UuidKind,
     ) -> Result<(), BluetoothError> {
-        self.led_devices
+        self.devices
             .iter_mut()
             .map(|device| device.set_char(char_kind, uuid_kind))
             .collect::<Result<(), BluetoothError>>()?;
@@ -108,7 +108,7 @@ impl<D: Device> Controller<D> {
     ///
     /// ```
     pub fn list(&mut self) -> &mut Vec<D> {
-        &mut self.led_devices
+        &mut self.devices
     }
 
     //------------------//
@@ -127,7 +127,7 @@ impl<D: Device> Controller<D> {
         self.ble_adapter.start_scan(ScanFilter::default()).await?;
         time::sleep(Duration::from_secs(2)).await;
 
-        let mut led_devices: Vec<D> = Vec::new();
+        let mut devices: Vec<D> = Vec::new();
 
         for p in self.ble_adapter.peripherals().await? {
             let name = &p
@@ -138,10 +138,10 @@ impl<D: Device> Controller<D> {
                 .unwrap_or(String::from("Unknown"));
 
             if name.contains(self.prefix.as_ref().unwrap_or(&"".to_string())) {
-                led_devices.push(D::new(&name, &name, Some(p), None, None));
+                devices.push(D::new(&name, &name, Some(p), None, None));
             }
         }
-        Ok(led_devices)
+        Ok(devices)
     }
     //---------//
     // Connect //
@@ -159,8 +159,8 @@ impl<D: Device> Controller<D> {
     /// ```
     pub async fn connect(&mut self) -> Result<(), BluetoothError> {
         // Discover devices //
-        let led_devices = self.device_discovery().await?;
-        self._connect(led_devices).await?;
+        let devices = self.device_discovery().await?;
+        self._connect(devices).await?;
         Ok(())
     }
 
@@ -178,20 +178,17 @@ impl<D: Device> Controller<D> {
     /// controller.connect_with_devices(lights).await?;
     ///
     /// ```
-    pub async fn connect_with_devices(
-        &mut self,
-        led_devices: Vec<D>,
-    ) -> Result<(), BluetoothError> {
-        self._connect(led_devices).await?;
+    pub async fn connect_with_devices(&mut self, devices: Vec<D>) -> Result<(), BluetoothError> {
+        self._connect(devices).await?;
         Ok(())
     }
-    async fn _connect(&mut self, led_devices: Vec<D>) -> Result<(), BluetoothError> {
-        self.led_devices = led_devices;
+    async fn _connect(&mut self, devices: Vec<D>) -> Result<(), BluetoothError> {
+        self.devices = devices;
 
         // Connect devices //
-        for led_device in self.led_devices.iter_mut() {
+        for device in self.devices.iter_mut() {
             // Connect //
-            led_device
+            device
                 .peripheral()
                 .as_ref()
                 .ok_or(BluetoothError::InvalidPeripheralReference)?
@@ -199,7 +196,7 @@ impl<D: Device> Controller<D> {
                 .await?;
 
             // Service discovry //
-            led_device
+            device
                 .peripheral()
                 .as_ref()
                 .ok_or(BluetoothError::InvalidPeripheralReference)?
